@@ -1,3 +1,4 @@
+//USELESS FOR NOW. I will try using names of pipes and open fstreams
 #include <transport/PipeTransport.hpp>
 
 #include <fcntl.h>

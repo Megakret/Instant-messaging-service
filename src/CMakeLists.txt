@@ -1,1 +1,12 @@
 add_subdirectory(transport)
+foreach(example main_handler messenger_service)
+  add_library(${example}_lib ${example}.cpp)
+	target_include_directories(${example}_lib PUBLIC ${INCLUDES})
+	target_link_libraries(${example}_lib PUBLIC proto-objects)
+endforeach()
+
+add_executable(main_handler_test main_handler_test.cpp)
+target_link_libraries(main_handler_test PUBLIC main_handler_lib messenger_service_lib GTest::gtest_main)
+foreach(executable main_handler_test)
+	target_include_directories(${executable} PUBLIC ${INCLUDES})
+endforeach()

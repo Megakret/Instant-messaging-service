@@ -1,0 +1,29 @@
+edition = "2023";
+
+package messenger;
+
+message ConnectMessage{
+  string login = 1;
+  string pipe_path = 2;
+}
+message DisconnectMessage{
+  string login = 1;
+  string pipe_path = 2;
+}
+message ConnectResponce{
+  enum StatusType{
+    OK = 0;
+    ERROR = 1;
+  }
+  StatusType status = 1;
+  string verbose = 2;
+  string reading_pipe_path = 3;
+}
+message DisconnectResponce{
+  enum StatusType{
+    OK = 0;
+    ERROR = 1;
+  }
+  StatusType status = 1;
+  string verbose = 2;
+}
