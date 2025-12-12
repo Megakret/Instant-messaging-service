@@ -1,21 +1,22 @@
 #include <gtest/gtest.h>
 
-#include <iostream>
+#include <format>
 #include <string.h>
 #include <thread>
 
+#include <config.hpp>
 #include <transport/PipeTransport.hpp>
 
 namespace transport {
-const char *kTransportName = "/tmp/test";
-const std::string_view kHelloWorld("Hello world");
+constexpr std::string_view kHelloWorld("Hello world");
+constexpr std::string_view kMsgTemplate("Hello world{}");
 TEST(HelloWorld, HelloWorld) {
   ErrCreation err;
-  PipeTransport transport(kTransportName, Read, err);
+  PipeTransport transport(std::string(kAcceptingPipePath), Read, err);
   ASSERT_EQ(err.error_code, kSuccess);
   std::thread t([]() {
     ErrCreation err;
-    PipeTransport transport(kTransportName, Write, err);
+    PipeTransport transport(std::string(kAcceptingPipePath), Write, err);
     ASSERT_EQ(err.error_code, kSuccess);
     std::span<const char> buf(kHelloWorld.data(), kHelloWorld.size());
     ErrSend err_send = transport.Send(buf);
@@ -30,11 +31,44 @@ TEST(HelloWorld, HelloWorld) {
     EXPECT_EQ(buffer[i], kHelloWorld[i]);
   }
 }
-TEST(WrongPermissions, ReadFromWrite){
+TEST(WrongPermissions, ReadFromWrite) {
   ErrCreation err;
-  PipeTransport transport(kTransportName, Write, err);
+  PipeTransport transport(std::string(kAcceptingPipePath), Write, err);
   ASSERT_EQ(err.error_code, kSuccess);
-	std::span<char> buf;
-	auto[read_bytes, err_receive] = transport.Receive(buf);
+  std::span<char> buf;
+  auto [read_bytes, err_receive] = transport.Receive(buf);
+}
+TEST(Stream, HelloWorld) {
+  ErrCreation err;
+  PipeTransport transport(std::string(kAcceptingPipePath), Read, err);
+  ASSERT_EQ(err.error_code, kSuccess);
+  std::thread t([]() {
+    ErrCreation err;
+    PipeTransport transport(std::string(kAcceptingPipePath), Write, err);
+    ASSERT_EQ(err.error_code, kSuccess);
+    auto [stream, err_stream] = transport.StartStream();
+    ASSERT_EQ(err_stream.error_code, kSuccess);
+    for (int i = 0; i < 5; ++i) {
+      std::string msg = std::format(kMsgTemplate, i);
+      std::span<const char> buf(msg);
+      auto err_send = stream.Send(buf);
+      ASSERT_EQ(err_send.error_code, kSuccess);
+    }
+  });
+  std::array<char, 100> buffer;
+  auto [stream, err_stream] = transport.StartStream();
+  ASSERT_EQ(err_stream.error_code, kSuccess);
+  std::array<char, 100> buf;
+  for (int i = 0; i < 5; ++i) {
+    std::string msg = std::format(kMsgTemplate, i);
+    auto [recv_bytes, err_recv] = stream.Receive(buf);
+		ASSERT_EQ(recv_bytes, msg.length());
+    ASSERT_EQ(err_recv.error_code, kSuccess);
+    for (std::size_t i = 0; i < msg.length(); ++i) {
+      EXPECT_EQ(buffer[i], msg[i]);
+    }
+  }
+
+  t.join();
 }
 }; // namespace transport

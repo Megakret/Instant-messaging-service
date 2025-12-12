@@ -1,0 +1,10 @@
+foreach(example user)
+  add_library(${example}_lib ${example}.cpp)
+	target_include_directories(${example}_lib PUBLIC ${INCLUDES})
+	target_link_libraries(${example}_lib PUBLIC proto-objects)
+endforeach()
+
+add_library(messenger_service_lib messenger_service.cpp)
+target_include_directories(messenger_service_lib PUBLIC ${INCLUDES})
+target_link_libraries(messenger_service_lib PUBLIC user_lib proto-objects)
+
