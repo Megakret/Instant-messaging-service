@@ -1,3 +1,4 @@
+//useless for now, i will use fstream for easier protobuf serialization and parsing 
 #pragma once
 
 #include <span>
@@ -31,16 +32,34 @@ struct ErrSend {
   int _errno;     // If syscall has failed
   std::size_t written_bytes;
 };
+struct ErrStartStream {
+  int error_code; // Err constants are here
+  int _errno;     // If syscall has failed
+};
+class PipeStream {
+public:
+  PipeStream(int pipe_fd);
+	PipeStream(const PipeStream&) = delete;
+	PipeStream(PipeStream&&);
+  ErrSend Send(std::span<const char> buffer) const;
+  std::pair<int, ErrReceive> Receive(std::span<char> buffer) const;
+  ~PipeStream();
+
+private:
+  int pipe_fd_;
+};
 class PipeTransport {
 public:
-  PipeTransport(const std::string& name, PipeFlags flags, ErrCreation &err_ref);
-  ErrSend Send(std::span<const char> buffer);
-  std::pair<int, ErrReceive> Receive(std::span<char> buffer); //Returns bytes read
+  PipeTransport(const std::string &name, PipeFlags flags, ErrCreation &err_ref);
+  ErrSend Send(std::span<const char> buffer) const;
+  std::pair<int, ErrReceive>
+  Receive(std::span<char> buffer) const; // Returns bytes read
+  std::pair<PipeStream, ErrStartStream> StartStream() const;
   ~PipeTransport();
 
 private:
-	const std::string filename_;
-	const PipeFlags flags_;
+  const std::string filename_;
+  const PipeFlags flags_;
 };
 inline PipeFlags operator|(PipeFlags a, PipeFlags b) {
   return static_cast<PipeFlags>(static_cast<int>(a) | static_cast<int>(b));

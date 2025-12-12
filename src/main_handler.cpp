@@ -2,11 +2,12 @@
 #include <iostream>
 
 #include <config.hpp>
-#include <messenger_service.hpp>
+#include <handlers/handle.hpp>
+#include <handlers/messenger_service.hpp>
 #include <protos/main.pb.h>
 
 void main_handler_loop() {
-  MessegingService messeging_service;
+	handlers::MessegingService messeging_service;
   while (true) {
     std::fstream accepting_pipe(kAcceptingPipePath.data(),
                                 std::ios::in | std::ios::binary);
@@ -14,17 +15,11 @@ void main_handler_loop() {
     accepting_pipe >> msg_typeid;
     switch (msg_typeid) {
     case kConnectionMsgID:
-      messenger::ConnectMessage request;
-      if (!request.ParseFromIstream(&accepting_pipe)) {
-        std::cout << "Failed to accept connection due to parsing error\n";
-        break;
-      }
-      auto responce = messeging_service.CreateConnection(request);
-      std::fstream user_pipe(request.pipe_path(),
-                             std::ios::out | std::ios::binary);
-      if (!responce.SerializeToOstream(&user_pipe)) {
-        std::cout << "Failed to write responce due to serializing error\n";
-      };
+      handlers::HandleRequest<messenger::ConnectResponce,
+                              messenger::ConnectMessage>(
+          accepting_pipe, [&messeging_service](auto req) -> auto {
+            return messeging_service.CreateConnection(req);
+          });
       break;
       // idk
     }

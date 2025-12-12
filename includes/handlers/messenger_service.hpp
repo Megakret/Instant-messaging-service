@@ -4,6 +4,7 @@
 
 #include <protos/main.pb.h>
 
+namespace handlers {
 class MessegingService {
 public:
   messenger::ConnectResponce
@@ -14,3 +15,4 @@ public:
 private:
   // Here i will store users
 };
+} // namespace handler

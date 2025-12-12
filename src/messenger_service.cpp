@@ -1,5 +1,6 @@
-#include <messenger_service.hpp>
+#include <handlers/messenger_service.hpp>
 
+namespace handlers {
 messenger::ConnectResponce
 MessegingService::CreateConnection(const messenger::ConnectMessage &msg) {
   messenger::ConnectResponce responce;
@@ -9,9 +10,11 @@ MessegingService::CreateConnection(const messenger::ConnectMessage &msg) {
   return responce;
 }
 
-messenger::DisconnectResponce MessegingService::CloseConnection(const messenger::DisconnectMessage& msg){
-	messenger::DisconnectResponce responce;
-	responce.set_status(messenger::DisconnectResponce::OK);
-	responce.set_verbose("Bye, world\n");
-	return responce;
+messenger::DisconnectResponce
+MessegingService::CloseConnection(const messenger::DisconnectMessage &msg) {
+  messenger::DisconnectResponce responce;
+  responce.set_status(messenger::DisconnectResponce::OK);
+  responce.set_verbose("Bye, world\n");
+  return responce;
 }
+} // namespace handlers

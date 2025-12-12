@@ -7,7 +7,7 @@
 #include<config.hpp>
 #include<protos/main.pb.h>
 
-const std::string_view kUserPipe = "/tmp/test_user_pipe";
+const std::string_view kUserPipe = kAcceptingPipePath;
 
 TEST(ConnectingTests, SimpleConnect){
 	std::thread t1(main_handler_loop);	
