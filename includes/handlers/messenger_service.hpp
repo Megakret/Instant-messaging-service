@@ -3,6 +3,7 @@
 #include <map>
 
 #include <protos/main.pb.h>
+#include <handlers/user.hpp>
 
 namespace handlers {
 class MessegingService {
@@ -14,5 +15,6 @@ public:
   // SendTo not implemented yet
 private:
   // Here i will store users
+	std::map<std::string, User> users_;
 };
 } // namespace handler

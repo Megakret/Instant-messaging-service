@@ -2,4 +2,4 @@
 
 mkdir /tmp/chat
 mkfifo /tmp/chat/main_pipe
-mkdir /tmp/chat/reveivers
+mkdir /tmp/chat/receivers

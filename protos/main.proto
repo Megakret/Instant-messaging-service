@@ -27,3 +27,16 @@ message DisconnectResponce{
   StatusType status = 1;
   string verbose = 2;
 }
+message SendMessage{
+  string sender_login = 1;
+  string receiver_login = 2;
+  string message = 3;
+}
+message SendResponce{
+  enum StatusType{
+    OK = 0;
+    ERROR = 1;
+  }
+  StatusType status = 1;
+  string verbose = 2;
+}

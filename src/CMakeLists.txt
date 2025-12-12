@@ -1,5 +1,6 @@
 add_subdirectory(transport)
-foreach(example main_handler messenger_service)
+add_subdirectory(handlers)
+foreach(example main_handler)
   add_library(${example}_lib ${example}.cpp)
 	target_include_directories(${example}_lib PUBLIC ${INCLUDES})
 	target_link_libraries(${example}_lib PUBLIC proto-objects)

@@ -7,7 +7,7 @@
 #include <protos/main.pb.h>
 
 void main_handler_loop() {
-	handlers::MessegingService messeging_service;
+  handlers::MessegingService messeging_service;
   while (true) {
     std::fstream accepting_pipe(kAcceptingPipePath.data(),
                                 std::ios::in | std::ios::binary);
@@ -22,6 +22,13 @@ void main_handler_loop() {
           });
       break;
       // idk
+    case kDisconnectMsgID:
+      handlers::HandleRequest<messenger::DisconnectResponce,
+                              messenger::DisconnectMessage>(
+          accepting_pipe, [&messeging_service](auto req) -> auto {
+            return messeging_service.CloseConnection(req);
+          });
+      break;
     }
   }
 }
