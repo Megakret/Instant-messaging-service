@@ -17,6 +17,9 @@ PipeTransport::PipeTransport(const std::string &name, PipeFlags flags,
   if (Create & flags) {
     int status = mkfifo(name.c_str(), kFullPermission);
     if (status == -1) {
+      if (errno == EEXIST) {
+        return;
+      }
       err_ref = ErrCreation{kErrCreatePipe, errno};
       return;
     }

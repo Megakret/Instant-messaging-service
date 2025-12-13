@@ -1,5 +1,6 @@
 #include <handlers/messenger_service.hpp>
 
+#include <chrono>
 #include <fstream>
 #include <string.h>
 #include <sys/stat.h>
@@ -49,5 +50,35 @@ MessegingService::CloseConnection(const messenger::DisconnectMessage &msg) {
     std::cout << "Couldn't remove the fifo\n";
   }
   return responce;
+}
+messenger::SendResponce
+MessegingService::SendMessage(const messenger::SendMessage &msg) {
+  messenger::SendResponce responce;
+  auto it = users_.find(msg.receiver_login());
+  if (it == users_.end()) {
+    // TODO: normal errors
+    responce.set_status(messenger::SendResponce::ERROR);
+    responce.set_verbose("receiver doesnt exist");
+    return responce;
+  }
+  User &receiver = it->second;
+  if (receiver.IsConnected()) {
+    const auto now = std::chrono::system_clock::now();
+    auto err = receiver.SendTo(msg.sender_login(), msg.message(), now);
+    std::cout << "Sending from" << msg.sender_login() << "to "
+              << msg.receiver_login() << '\n';
+    if (err.error_code != kSuccess) {
+      responce.set_status(messenger::SendResponce::ERROR);
+      responce.set_verbose("error during message sending");
+      return responce;
+    }
+    responce.set_status(messenger::SendResponce::OK);
+    return responce;
+  } else {
+    // Error for now
+    responce.set_status(messenger::SendResponce::ERROR);
+    responce.set_verbose("receiver isnt connected");
+    return responce;
+  }
 }
 } // namespace handlers
