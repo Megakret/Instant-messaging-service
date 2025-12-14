@@ -1,4 +1,3 @@
-//useless for now, i will use fstream for easier protobuf serialization and parsing 
 #pragma once
 
 #include <span>
@@ -14,10 +13,13 @@ const int kErrWriteFailed = 4;
 const int kErrPartialWrite = 5;
 const int kErrReadFailed = 6;
 const int kNoPermissions = 7;
+const int kErrTimeout = 8;
+const int kErrSystem = 9;
 enum PipeFlags {
   Create = 1,
   Write = 1 << 1,
   Read = 1 << 2,
+  Nonblock = 1 << 3,
 };
 struct ErrCreation {
   int error_code; // Err constants are here
@@ -39,8 +41,9 @@ struct ErrStartStream {
 class PipeStream {
 public:
   PipeStream(int pipe_fd);
-	PipeStream(const PipeStream&) = delete;
-	PipeStream(PipeStream&&);
+  PipeStream(const PipeStream &) = delete;
+  PipeStream(PipeStream &&);
+  PipeStream &operator=(PipeStream &&);
   ErrSend Send(std::span<const char> buffer) const;
   std::pair<int, ErrReceive> Receive(std::span<char> buffer) const;
   ~PipeStream();

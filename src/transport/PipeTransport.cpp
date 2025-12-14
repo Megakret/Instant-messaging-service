@@ -1,4 +1,3 @@
-// USELESS FOR NOW. I will try using names of pipes and open fstreams
 #include <transport/PipeTransport.hpp>
 
 #include <fcntl.h>
@@ -11,6 +10,7 @@ const int kFullPermission = 0600;
 PipeTransport::PipeTransport(const std::string &name, PipeFlags flags,
                              ErrCreation &err_ref)
     : filename_(name), flags_(flags) {
+  err_ref = ErrCreation{kSuccess};
   if (Write & flags && Read & flags) {
     err_ref = ErrCreation{kErrOpenReadAndWrite, 0};
   }
@@ -69,6 +69,12 @@ std::pair<int, ErrReceive> PipeStream::Receive(std::span<char> buffer) const {
     return std::make_pair(-1, ErrReceive{kErrReadFailed, errno});
   }
   return std::make_pair(read_bytes, ErrReceive{kSuccess, 0});
+}
+PipeStream &PipeStream::operator=(PipeStream &&other) {
+  PipeStream moved(std::move(other));
+  this->pipe_fd_ = moved.pipe_fd_;
+  moved.pipe_fd_ = -1;
+  return *this;
 }
 PipeStream::~PipeStream() {
   if (pipe_fd_ != -1) {

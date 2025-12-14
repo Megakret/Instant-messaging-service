@@ -1,7 +1,6 @@
 #include <handlers/messenger_service.hpp>
 
 #include <chrono>
-#include <fstream>
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -13,21 +12,26 @@ namespace handlers {
 messenger::ConnectResponce
 MessegingService::CreateConnection(const messenger::ConnectMessage &msg) {
   messenger::ConnectResponce responce;
+  transport::ErrCreation err;
   std::string recv_pipe_path = std::string(kReceiverDir) + "/" + msg.login();
-  int status = mkfifo(recv_pipe_path.c_str(), 0600);
-  if (status == -1 && errno != EEXIST) {
-    // TODO: add real error
-    responce.set_status(messenger::ConnectResponce::ERROR);
-    responce.set_verbose(strerror(errno));
-    return responce;
-  }
   auto it = users_.find(msg.login());
   if (it == users_.end()) {
-    users_.insert(
-        std::make_pair(msg.login(), User(msg.login(), recv_pipe_path)));
+    transport::PipeTransport transport(
+        recv_pipe_path, transport::Create | transport::Write, err);
+    if (err.error_code != transport::kSuccess) {
+      responce.set_status(messenger::ConnectResponce::ERROR);
+      responce.set_verbose("failed to create pipe");
+      std::cout << "Failed to create pipe transport(CreateConnection) due to: "
+                << strerror(err._errno) << '\n';
+      return responce;
+    }
+    auto [new_it, res] = users_.insert(
+        std::make_pair(msg.login(), User(msg.login(), transport)));
+    new_it->second.OnConnect();
   } else {
     it->second.OnConnect();
   }
+  responce.set_reading_pipe_path(recv_pipe_path);
   return responce;
 }
 
@@ -45,10 +49,7 @@ MessegingService::CloseConnection(const messenger::DisconnectMessage &msg) {
     responce.set_verbose("user isn't connected");
     return responce;
   }
-  int status = remove(it->second.GetRecvPipeName().c_str());
-  if (status == -1) {
-    std::cout << "Couldn't remove the fifo\n";
-  }
+  it->second.OnDisconnect();
   return responce;
 }
 messenger::SendResponce
@@ -65,20 +66,17 @@ MessegingService::SendMessage(const messenger::SendMessage &msg) {
   if (receiver.IsConnected()) {
     const auto now = std::chrono::system_clock::now();
     auto err = receiver.SendTo(msg.sender_login(), msg.message(), now);
-    std::cout << "Sending from" << msg.sender_login() << "to "
-              << msg.receiver_login() << '\n';
-    if (err.error_code != kSuccess) {
+    if (err.error_code != SendErr::Success) {
       responce.set_status(messenger::SendResponce::ERROR);
       responce.set_verbose("error during message sending");
       return responce;
     }
     responce.set_status(messenger::SendResponce::OK);
     return responce;
-  } else {
-    // Error for now
-    responce.set_status(messenger::SendResponce::ERROR);
-    responce.set_verbose("receiver isnt connected");
-    return responce;
   }
+  // Error for now
+  responce.set_status(messenger::SendResponce::ERROR);
+  responce.set_verbose("receiver isnt connected");
+  return responce;
 }
 } // namespace handlers
