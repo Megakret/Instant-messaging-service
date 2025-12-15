@@ -8,11 +8,11 @@
 #include <config.hpp>
 
 namespace handlers {
-
+MessegingService::MessegingService(UserStorage &users) : users_(users) {}
 messenger::ConnectResponce
 MessegingService::CreateConnection(const messenger::ConnectMessage &msg) {
   messenger::ConnectResponce responce;
-	transport::PipeErr err;
+  transport::PipeErr err;
   std::string recv_pipe_path = std::string(kReceiverDir) + "/" + msg.login();
   auto it = users_.find(msg.login());
   if (it == users_.end()) {
@@ -67,7 +67,7 @@ MessegingService::SendMessage(const messenger::SendMessage &msg) {
     if (err != SendToStatus::Success) {
       responce.set_status(messenger::SendResponce::ERROR);
       responce.set_verbose("error during message sending");
-			std::cout << "SendMessage error code: " << static_cast<int>(err) << '\n';
+      std::cout << "SendMessage error code: " << static_cast<int>(err) << '\n';
       return responce;
     }
     responce.set_status(messenger::SendResponce::OK);

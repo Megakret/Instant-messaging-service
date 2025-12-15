@@ -4,10 +4,12 @@
 
 #include <handlers/user.hpp>
 #include <protos/main.pb.h>
+#include <user_storage.hpp>
 
 namespace handlers {
 class MessegingService {
 public:
+  MessegingService(UserStorage &users);
   messenger::ConnectResponce
   CreateConnection(const messenger::ConnectMessage &msg);
   messenger::DisconnectResponce
@@ -16,6 +18,6 @@ public:
 
 private:
   // Here i will store users
-  std::map<std::string, User> users_;
+  UserStorage &users_;
 };
 } // namespace handlers
