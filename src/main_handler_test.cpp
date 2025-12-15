@@ -1,51 +1,169 @@
-#include <fstream>
 #include <thread>
 #include <unistd.h>
 
 #include <gtest/gtest.h>
 
 #include <config.hpp>
+#include <handlers/handle.hpp>
 #include <main_handler_loop.hpp>
 #include <protos/main.pb.h>
 
-const std::string_view kUserPipe = "/tmp/test_user";
+const std::string_view kUserPipe = "/tmp/";
+template <int msg_type, typename ProtoRequest>
+void SendToServer(const ProtoRequest &msg,
+                  const transport::PipeTransport &server) {
+  handlers::Metadata md{msg_type, static_cast<int64_t>(msg.ByteSizeLong())};
+  auto err = handlers::BindMetadataAndSend(msg, md, server);
+  EXPECT_EQ(err, handlers::BindMdAndSendErr::Success);
+}
+template <typename ProtoResponse>
+ProtoResponse GetFromPipe(const transport::PipeTransport &pipe) {
+  ProtoResponse response;
+  auto stream = pipe.StartStream();
+  EXPECT_TRUE(stream);
+  std::string buf(sizeof(handlers::ResponseMetadata), '\0');
+  auto read_bytes = stream->Receive(buf);
+  EXPECT_TRUE(read_bytes);
+  EXPECT_EQ(*read_bytes, buf.length());
+  auto metadata =
+      reinterpret_cast<const handlers::ResponseMetadata *>(buf.c_str());
+  std::string msg_buf(metadata->length, '\0');
+  auto read_bytes1 = stream->Receive(msg_buf);
+  EXPECT_TRUE(read_bytes1);
+  EXPECT_EQ(*read_bytes1, msg_buf.length());
+  EXPECT_TRUE(response.ParseFromString(msg_buf));
+  return response;
+}
 
-TEST(ConnectingTests, SimpleConnect) {
-  mkfifo("/tmp/test_user", 0600);
-  std::thread t1(main_handler_loop);
+std::string ConnectUser(const std::string &user) {
+  std::string pipe_path = "/tmp/" + user;
+  transport::PipeErr err;
+  transport::PipeTransport user_pipe(pipe_path,
+                                     transport::Read | transport::Create, err);
   {
-    std::fstream server_pipe(kAcceptingPipePath.data(),
-                             std::ios::out | std::ios::binary);
-    server_pipe << static_cast<int>(kConnectionMsgID);
+    transport::PipeErr err;
+    transport::PipeTransport server_pipe(std::string(kAcceptingPipePath),
+                                         transport::Write, err);
     messenger::ConnectMessage msg;
-    msg.set_login("kret");
-    msg.set_pipe_path(kUserPipe);
-    EXPECT_TRUE(msg.SerializeToOstream(&server_pipe));
+    msg.set_login(user);
+    msg.set_pipe_path(pipe_path);
+    SendToServer<kConnectionMsgID>(msg, server_pipe);
   }
   {
-    std::fstream client_pipe(kUserPipe.data(), std::ios::in | std::ios::binary);
-    messenger::ConnectResponce msg;
-    EXPECT_TRUE(msg.ParseFromIstream(&client_pipe));
+    auto msg(GetFromPipe<messenger::ConnectResponce>(user_pipe));
     EXPECT_EQ(msg.status(), messenger::ConnectResponce::OK);
-    std::cout << msg.verbose();
+    if (msg.status() != messenger::ConnectResponce::OK) {
+      std::cout << "Error on connecting: " << msg.verbose() << '\n';
+    }
+    return msg.reading_pipe_path();
   }
-  EXPECT_EQ(access((std::string(kReceiverDir) + "/kret").c_str(), F_OK), 0);
-  t1.detach();
-  // Now disconnect
+}
+
+void DisconnectUser(const std::string &user) {
+  std::string pipe_path = "/tmp/" + user;
   {
-    std::fstream server_pipe(kAcceptingPipePath.data(),
-                             std::ios::out | std::ios::binary);
-    server_pipe << static_cast<int>(kDisconnectMsgID);
+    transport::PipeErr err;
+    transport::PipeTransport pipe(std::string(kAcceptingPipePath),
+                                  transport::Write, err);
     messenger::DisconnectMessage msg;
-    msg.set_login("kret");
-    msg.set_pipe_path(kUserPipe);
-    EXPECT_TRUE(msg.SerializeToOstream(&server_pipe));
+    msg.set_login(user);
+    msg.set_pipe_path(pipe_path);
+    SendToServer<kDisconnectMsgID>(msg, pipe);
   }
   {
-    std::fstream client_pipe(kUserPipe.data(), std::ios::in | std::ios::binary);
-    messenger::DisconnectResponce msg;
-    EXPECT_TRUE(msg.ParseFromIstream(&client_pipe));
+    transport::PipeErr err;
+    transport::PipeTransport pipe(pipe_path, transport::Read, err);
+    auto msg(GetFromPipe<messenger::DisconnectResponce>(pipe));
     EXPECT_EQ(msg.status(), messenger::DisconnectResponce::OK);
+    if (msg.status() != messenger::DisconnectResponce::OK) {
+      std::cout << "Error on disconnecting: " << msg.verbose() << '\n';
+    }
   }
-  EXPECT_NE(access((std::string(kReceiverDir) + "/kret").c_str(), F_OK), 0);
+}
+TEST(ConnectingTests, SimpleConnect) {
+  ConnectUser("kret");
+  EXPECT_EQ(access((std::string(kReceiverDir) + "/kret").c_str(), F_OK), 0);
+  // Now disconnect
+  DisconnectUser("kret");
+}
+TEST(ConnectingTests, TwoUsers) {
+  auto biba_path = ConnectUser("biba");
+  auto boba_path = ConnectUser("boba");
+  DisconnectUser("biba");
+  DisconnectUser("boba");
+}
+TEST(SendMessageTest, PingPong) {
+  auto biba_path = ConnectUser("biba");
+  auto boba_path = ConnectUser("boba");
+  std::thread receiver([&biba_path]() {
+    transport::PipeErr err;
+    transport::PipeTransport biba_pipe(biba_path, transport::Read, err);
+    transport::PipeTransport server_pipe(std::string(kAcceptingPipePath),
+                                         transport::Write, err);
+    transport::PipeTransport answer_pipe(std::string(kUserPipe) + "biba",
+                                         transport::Read | transport::Create,
+                                         err);
+    {
+      auto msg = GetFromPipe<messenger::MessageForUser>(biba_pipe);
+      EXPECT_EQ(msg.sender_login(), "boba");
+      EXPECT_EQ(msg.message(), "ping");
+      std::cout << "Biba received ping\n";
+    }
+    {
+      messenger::SendMessage msg;
+      msg.set_sender_login("biba");
+      msg.set_receiver_login("boba");
+      msg.set_message("pong");
+      msg.set_pipe_path(std::string(kUserPipe) + "biba");
+      SendToServer<kSendMsgID>(msg, server_pipe);
+      std::cout << "Biba send pong\n";
+    }
+    {
+      auto msg = GetFromPipe<messenger::SendResponce>(answer_pipe);
+      EXPECT_EQ(msg.status(), messenger::SendResponce::OK);
+      if (msg.status() != messenger::SendResponce::OK) {
+        std::cout << "Sending pong error: " << msg.verbose() << '\n';
+      }
+      std::cout << "Biba received answer from server\n";
+    }
+  });
+  transport::PipeErr err;
+  transport::PipeTransport boba_pipe(boba_path, transport::Read, err);
+  transport::PipeTransport server_pipe(std::string(kAcceptingPipePath),
+                                       transport::Write, err);
+  transport::PipeTransport answer_pipe(std::string(kUserPipe) + "boba",
+                                       transport::Read | transport::Create,
+                                       err);
+  {
+    messenger::SendMessage msg;
+    msg.set_sender_login("boba");
+    msg.set_receiver_login("biba");
+    msg.set_message("ping");
+    msg.set_pipe_path(std::string(kUserPipe) + "boba");
+    SendToServer<kSendMsgID>(msg, server_pipe);
+    std::cout << "Boba sent ping\n";
+  }
+  {
+    auto msg = GetFromPipe<messenger::SendResponce>(answer_pipe);
+    EXPECT_EQ(msg.status(), messenger::SendResponce::OK);
+    if (msg.status() != messenger::SendResponce::OK) {
+      std::cout << "Sending ping error: " << msg.verbose() << '\n';
+    }
+    std::cout << "Boba received answer from server\n";
+  }
+  {
+    auto msg = GetFromPipe<messenger::MessageForUser>(boba_pipe);
+    EXPECT_EQ(msg.sender_login(), "biba");
+    EXPECT_EQ(msg.message(), "pong");
+    std::cout << "Boba got pong\n";
+  }
+  receiver.join();
+  DisconnectUser("biba");
+  DisconnectUser("boba");
+}
+int main(int argc, char **argv) {
+  testing::InitGoogleTest(&argc, argv);
+  std::thread t1(main_handler_loop);
+  t1.detach();
+  return RUN_ALL_TESTS();
 }

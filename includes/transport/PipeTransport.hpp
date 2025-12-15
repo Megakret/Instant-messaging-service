@@ -1,48 +1,33 @@
-//useless for now, i will use fstream for easier protobuf serialization and parsing 
 #pragma once
 
+#include <expected>
 #include <span>
 #include <string>
 
 namespace transport {
 const std::size_t kBufferSize = 1024;
-const int kSuccess = 0;
-const int kErrCreatePipe = 1;
-const int kErrOpenPipe = 2;
-const int kErrOpenReadAndWrite = 3;
-const int kErrWriteFailed = 4;
-const int kErrPartialWrite = 5;
-const int kErrReadFailed = 6;
-const int kNoPermissions = 7;
+enum class PipeErr {
+	Success,
+  CreateFailed,
+  OpenFailed,
+  WrongFlags,
+  WriteFailed,
+  ReadFailed,
+  NoPermission,
+};
 enum PipeFlags {
   Create = 1,
   Write = 1 << 1,
   Read = 1 << 2,
 };
-struct ErrCreation {
-  int error_code; // Err constants are here
-  int _errno;     // If syscall has failed
-};
-struct ErrReceive {
-  int error_code; // Err constants are here
-  int _errno;     // If syscall has failed
-};
-struct ErrSend {
-  int error_code; // Err constants are here
-  int _errno;     // If syscall has failed
-  std::size_t written_bytes;
-};
-struct ErrStartStream {
-  int error_code; // Err constants are here
-  int _errno;     // If syscall has failed
-};
 class PipeStream {
 public:
   PipeStream(int pipe_fd);
-	PipeStream(const PipeStream&) = delete;
-	PipeStream(PipeStream&&);
-  ErrSend Send(std::span<const char> buffer) const;
-  std::pair<int, ErrReceive> Receive(std::span<char> buffer) const;
+  PipeStream(const PipeStream &) = delete;
+  PipeStream(PipeStream &&);
+  PipeStream &operator=(PipeStream &&);
+  std::expected<int, PipeErr> Send(std::span<const char> buffer) const;
+  std::expected<int, PipeErr> Receive(std::span<char> buffer) const;
   ~PipeStream();
 
 private:
@@ -50,11 +35,11 @@ private:
 };
 class PipeTransport {
 public:
-  PipeTransport(const std::string &name, PipeFlags flags, ErrCreation &err_ref);
-  ErrSend Send(std::span<const char> buffer) const;
-  std::pair<int, ErrReceive>
+  PipeTransport(const std::string &name, PipeFlags flags, PipeErr &err_ref);
+	std::expected<int, PipeErr> Send(std::span<const char> buffer) const;
+  std::expected<int, PipeErr>
   Receive(std::span<char> buffer) const; // Returns bytes read
-  std::pair<PipeStream, ErrStartStream> StartStream() const;
+  std::expected<PipeStream, PipeErr> StartStream() const;
   ~PipeTransport();
 
 private:

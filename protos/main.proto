@@ -31,6 +31,12 @@ message SendMessage{
   string sender_login = 1;
   string receiver_login = 2;
   string message = 3;
+  string pipe_path = 4;
+}
+message MessageForUser{
+  string sender_login = 1;
+  string message = 2;
+  int32 time = 3;
 }
 message SendResponce{
   enum StatusType{
