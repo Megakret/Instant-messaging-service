@@ -1,4 +1,3 @@
-#include <thread>
 #include <unistd.h>
 
 #include <gtest/gtest.h>
@@ -7,6 +6,7 @@
 #include <handlers/handle.hpp>
 #include <main_handler_loop.hpp>
 #include <protos/main.pb.h>
+#include <thread.hpp>
 
 const std::string_view kUserPipe = "/tmp/";
 template <int msg_type, typename ProtoRequest>
@@ -95,7 +95,8 @@ TEST(ConnectingTests, TwoUsers) {
 TEST(SendMessageTest, PingPong) {
   auto biba_path = ConnectUser("biba");
   auto boba_path = ConnectUser("boba");
-  std::thread receiver([&biba_path]() {
+  os::Thread receiver;
+  auto lambda = std::function<void()>([&biba_path]() {
     transport::PipeErr err;
     transport::PipeTransport biba_pipe(biba_path, transport::Read, err);
     transport::PipeTransport server_pipe(std::string(kAcceptingPipePath),
@@ -127,6 +128,7 @@ TEST(SendMessageTest, PingPong) {
       std::cout << "Biba received answer from server\n";
     }
   });
+  receiver.RunLambda(&lambda);
   transport::PipeErr err;
   transport::PipeTransport boba_pipe(boba_path, transport::Read, err);
   transport::PipeTransport server_pipe(std::string(kAcceptingPipePath),
@@ -157,13 +159,15 @@ TEST(SendMessageTest, PingPong) {
     EXPECT_EQ(msg.message(), "pong");
     std::cout << "Boba got pong\n";
   }
-  receiver.join();
+  receiver.Join();
   DisconnectUser("biba");
   DisconnectUser("boba");
 }
 int main(int argc, char **argv) {
   testing::InitGoogleTest(&argc, argv);
-  std::thread t1(main_handler_loop);
-  t1.detach();
+  os::Thread t1;
+  auto lambda = std::function<void()>(main_handler_loop);
+  t1.RunLambda(&lambda);
+  t1.Detach();
   return RUN_ALL_TESTS();
 }

@@ -2,9 +2,9 @@
 
 #include <format>
 #include <string.h>
-#include <thread>
 
 #include <config.hpp>
+#include <thread.hpp>
 #include <transport/PipeTransport.hpp>
 
 namespace transport {
@@ -14,7 +14,8 @@ TEST(HelloWorld, HelloWorld) {
   transport::PipeErr err;
   PipeTransport transport(std::string(kAcceptingPipePath), Read, err);
   ASSERT_EQ(err, transport::PipeErr::Success);
-  std::thread t([]() {
+  os::Thread t1;
+  auto lambda = std::function<void()>([]() {
     transport::PipeErr err;
     PipeTransport transport(std::string(kAcceptingPipePath), Write, err);
     ASSERT_EQ(err, transport::PipeErr::Success);
@@ -22,9 +23,10 @@ TEST(HelloWorld, HelloWorld) {
     auto err_send = transport.Send(buf);
     ASSERT_TRUE(err_send);
   });
+  t1.RunLambda(&lambda);
   std::array<char, 100> buffer;
   auto read_bytes = transport.Receive(buffer);
-  t.join();
+  t1.Join();
   ASSERT_TRUE(read_bytes);
   EXPECT_EQ(*read_bytes, kHelloWorld.size());
   for (std::size_t i = 0; i < kHelloWorld.size(); ++i) {
@@ -34,7 +36,7 @@ TEST(HelloWorld, HelloWorld) {
 TEST(WrongPermissions, ReadFromWrite) {
   transport::PipeErr err;
   PipeTransport transport(std::string(kAcceptingPipePath), Write, err);
-    ASSERT_EQ(err, transport::PipeErr::Success);
+  ASSERT_EQ(err, transport::PipeErr::Success);
   std::span<char> buf;
   auto read_bytes = transport.Receive(buf);
   EXPECT_FALSE(read_bytes);
@@ -43,8 +45,9 @@ const std::size_t stream_message_size = kMsgTemplate.size() - 1;
 TEST(Stream, HelloWorld) {
   transport::PipeErr err;
   PipeTransport transport(std::string(kAcceptingPipePath), Read, err);
-    ASSERT_EQ(err, transport::PipeErr::Success);
-  std::thread t([]() {
+  ASSERT_EQ(err, transport::PipeErr::Success);
+  os::Thread t;
+  auto lambda = std::function<void()>([]() {
     transport::PipeErr err;
     PipeTransport transport(std::string(kAcceptingPipePath), Write, err);
     ASSERT_EQ(err, transport::PipeErr::Success);
@@ -57,6 +60,7 @@ TEST(Stream, HelloWorld) {
       ASSERT_TRUE(err_send);
     }
   });
+  t.RunLambda(&lambda);
   auto stream = transport.StartStream();
   ASSERT_TRUE(stream);
   std::array<char, stream_message_size> buf;
@@ -70,6 +74,6 @@ TEST(Stream, HelloWorld) {
     }
   }
 
-  t.join();
+  t.Join();
 }
 }; // namespace transport
