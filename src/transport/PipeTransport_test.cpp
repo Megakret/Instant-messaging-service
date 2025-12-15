@@ -11,59 +11,60 @@ namespace transport {
 constexpr std::string_view kHelloWorld("Hello world");
 constexpr std::string_view kMsgTemplate("Hello world{}");
 TEST(HelloWorld, HelloWorld) {
-  ErrCreation err;
+  transport::PipeErr err;
   PipeTransport transport(std::string(kAcceptingPipePath), Read, err);
-  ASSERT_EQ(err.error_code, kSuccess);
+  ASSERT_EQ(err, transport::PipeErr::Success);
   std::thread t([]() {
-    ErrCreation err;
+    transport::PipeErr err;
     PipeTransport transport(std::string(kAcceptingPipePath), Write, err);
-    ASSERT_EQ(err.error_code, kSuccess);
+    ASSERT_EQ(err, transport::PipeErr::Success);
     std::span<const char> buf(kHelloWorld.data(), kHelloWorld.size());
-    ErrSend err_send = transport.Send(buf);
-    ASSERT_EQ(err_send.error_code, kSuccess);
+    auto err_send = transport.Send(buf);
+    ASSERT_TRUE(err_send);
   });
   std::array<char, 100> buffer;
-  auto [read_bytes, err_receive] = transport.Receive(buffer);
+  auto read_bytes = transport.Receive(buffer);
   t.join();
-  EXPECT_EQ(read_bytes, kHelloWorld.size());
-  ASSERT_EQ(err_receive.error_code, kSuccess);
+  ASSERT_TRUE(read_bytes);
+  EXPECT_EQ(*read_bytes, kHelloWorld.size());
   for (std::size_t i = 0; i < kHelloWorld.size(); ++i) {
     EXPECT_EQ(buffer[i], kHelloWorld[i]);
   }
 }
 TEST(WrongPermissions, ReadFromWrite) {
-  ErrCreation err;
+  transport::PipeErr err;
   PipeTransport transport(std::string(kAcceptingPipePath), Write, err);
-  ASSERT_EQ(err.error_code, kSuccess);
+    ASSERT_EQ(err, transport::PipeErr::Success);
   std::span<char> buf;
-  auto [read_bytes, err_receive] = transport.Receive(buf);
+  auto read_bytes = transport.Receive(buf);
+  EXPECT_FALSE(read_bytes);
 }
 const std::size_t stream_message_size = kMsgTemplate.size() - 1;
 TEST(Stream, HelloWorld) {
-  ErrCreation err;
+  transport::PipeErr err;
   PipeTransport transport(std::string(kAcceptingPipePath), Read, err);
-  ASSERT_EQ(err.error_code, kSuccess);
+    ASSERT_EQ(err, transport::PipeErr::Success);
   std::thread t([]() {
-    ErrCreation err;
+    transport::PipeErr err;
     PipeTransport transport(std::string(kAcceptingPipePath), Write, err);
-    ASSERT_EQ(err.error_code, kSuccess);
-    auto [stream, err_stream] = transport.StartStream();
-    ASSERT_EQ(err_stream.error_code, kSuccess);
+    ASSERT_EQ(err, transport::PipeErr::Success);
+    auto stream = transport.StartStream();
+    ASSERT_TRUE(stream);
     for (int i = 0; i < 5; ++i) {
       std::string msg = std::format(kMsgTemplate, i);
       std::span<const char> buf(msg);
-      auto err_send = stream.Send(buf);
-      ASSERT_EQ(err_send.error_code, kSuccess);
+      auto err_send = stream->Send(buf);
+      ASSERT_TRUE(err_send);
     }
   });
-  auto [stream, err_stream] = transport.StartStream();
-  ASSERT_EQ(err_stream.error_code, kSuccess);
+  auto stream = transport.StartStream();
+  ASSERT_TRUE(stream);
   std::array<char, stream_message_size> buf;
   for (int i = 0; i < 5; ++i) {
     std::string msg = std::format(kMsgTemplate, i);
-    auto [recv_bytes, err_recv] = stream.Receive(buf);
+    auto recv_bytes = stream->Receive(buf);
+    ASSERT_TRUE(recv_bytes);
     ASSERT_EQ(recv_bytes, msg.length());
-    ASSERT_EQ(err_recv.error_code, kSuccess);
     for (std::size_t i = 0; i < msg.length(); ++i) {
       EXPECT_EQ(buf[i], msg[i]);
     }

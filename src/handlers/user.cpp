@@ -10,8 +10,7 @@ void User::OnConnect() { is_connected_ = true; }
 void User::OnDisconnect() { is_connected_ = false; }
 bool User::IsConnected() { return is_connected_; }
 transport::PipeTransport &User::GetTransport() { return transport_; }
-SendErr
-User::SendTo(std::string sender_login, std::string message,
+SendToStatus User::SendTo(std::string sender_login, std::string message,
              std::chrono::time_point<std::chrono::system_clock> sending_time) {
   // TODO: add timeouts for opening user pipe
   messenger::MessageForUser msg;
@@ -22,13 +21,13 @@ User::SendTo(std::string sender_login, std::string message,
                    .count());
   ResponseMetadata md{static_cast<int32_t>(msg.ByteSizeLong())};
   auto err = BindMetadataAndSend(msg, md, transport_);
-  if (err.error_code != BindMdAndSendErr::Success) {
-    if (err.error_code == BindMdAndSendErr::TransportErr) {
-      return SendErr{SendErr::SerializationErr};
+  if (err != BindMdAndSendErr::Success) {
+    if (err == BindMdAndSendErr::TransportErr) {
+      return SendToStatus::SystemErr;
     } else {
-      return SendErr{SendErr::SystemErr, err._errno};
+      return SendToStatus::SerializationErr;
     }
   }
-  return SendErr{SendErr::Success};
+  return SendToStatus::Success;
 }
 }; // namespace handlers

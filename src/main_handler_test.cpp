@@ -14,34 +14,34 @@ void SendToServer(const ProtoRequest &msg,
                   const transport::PipeTransport &server) {
   handlers::Metadata md{msg_type, static_cast<int64_t>(msg.ByteSizeLong())};
   auto err = handlers::BindMetadataAndSend(msg, md, server);
-  EXPECT_EQ(err.error_code, handlers::BindMdAndSendErr::Success);
+  EXPECT_EQ(err, handlers::BindMdAndSendErr::Success);
 }
 template <typename ProtoResponse>
 ProtoResponse GetFromPipe(const transport::PipeTransport &pipe) {
   ProtoResponse response;
-  auto [stream, err_stream] = pipe.StartStream();
-  EXPECT_EQ(err_stream.error_code, transport::kSuccess);
+  auto stream = pipe.StartStream();
+  EXPECT_TRUE(stream);
   std::string buf(sizeof(handlers::ResponseMetadata), '\0');
-  auto [read_bytes, err] = stream.Receive(buf);
-  EXPECT_EQ(err.error_code, transport::kSuccess);
-  EXPECT_EQ(read_bytes, buf.length());
+  auto read_bytes = stream->Receive(buf);
+  EXPECT_TRUE(read_bytes);
+  EXPECT_EQ(*read_bytes, buf.length());
   auto metadata =
       reinterpret_cast<const handlers::ResponseMetadata *>(buf.c_str());
   std::string msg_buf(metadata->length, '\0');
-  auto [read_bytes1, err1] = stream.Receive(msg_buf);
-  EXPECT_EQ(err1.error_code, transport::kSuccess);
-  EXPECT_EQ(read_bytes1, msg_buf.length());
+  auto read_bytes1 = stream->Receive(msg_buf);
+  EXPECT_TRUE(read_bytes1);
+  EXPECT_EQ(*read_bytes1, msg_buf.length());
   EXPECT_TRUE(response.ParseFromString(msg_buf));
   return response;
 }
 
 std::string ConnectUser(const std::string &user) {
   std::string pipe_path = "/tmp/" + user;
-  transport::ErrCreation err;
+  transport::PipeErr err;
   transport::PipeTransport user_pipe(pipe_path,
                                      transport::Read | transport::Create, err);
   {
-    transport::ErrCreation err;
+    transport::PipeErr err;
     transport::PipeTransport server_pipe(std::string(kAcceptingPipePath),
                                          transport::Write, err);
     messenger::ConnectMessage msg;
@@ -62,7 +62,7 @@ std::string ConnectUser(const std::string &user) {
 void DisconnectUser(const std::string &user) {
   std::string pipe_path = "/tmp/" + user;
   {
-    transport::ErrCreation err;
+    transport::PipeErr err;
     transport::PipeTransport pipe(std::string(kAcceptingPipePath),
                                   transport::Write, err);
     messenger::DisconnectMessage msg;
@@ -71,7 +71,7 @@ void DisconnectUser(const std::string &user) {
     SendToServer<kDisconnectMsgID>(msg, pipe);
   }
   {
-    transport::ErrCreation err;
+    transport::PipeErr err;
     transport::PipeTransport pipe(pipe_path, transport::Read, err);
     auto msg(GetFromPipe<messenger::DisconnectResponce>(pipe));
     EXPECT_EQ(msg.status(), messenger::DisconnectResponce::OK);
@@ -96,7 +96,7 @@ TEST(SendMessageTest, PingPong) {
   auto biba_path = ConnectUser("biba");
   auto boba_path = ConnectUser("boba");
   std::thread receiver([&biba_path]() {
-    transport::ErrCreation err;
+    transport::PipeErr err;
     transport::PipeTransport biba_pipe(biba_path, transport::Read, err);
     transport::PipeTransport server_pipe(std::string(kAcceptingPipePath),
                                          transport::Write, err);
@@ -127,7 +127,7 @@ TEST(SendMessageTest, PingPong) {
       std::cout << "Biba received answer from server\n";
     }
   });
-  transport::ErrCreation err;
+  transport::PipeErr err;
   transport::PipeTransport boba_pipe(boba_path, transport::Read, err);
   transport::PipeTransport server_pipe(std::string(kAcceptingPipePath),
                                        transport::Write, err);

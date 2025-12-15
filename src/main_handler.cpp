@@ -7,46 +7,44 @@
 
 void main_handler_loop() {
   handlers::MessegingService messeging_service;
-  transport::ErrCreation err;
+  transport::PipeErr err;
   transport::PipeTransport server_pipe(std::string(kAcceptingPipePath),
                                        transport::Read | transport::Create,
                                        err);
-  if (err.error_code != transport::kSuccess) {
-    std::cout << "Error on creating server_pipe: " << strerror(err._errno);
+  if (err != transport::PipeErr::Success) {
+    std::cout << "Error on creating server_pipe";
     return;
   }
-  auto [stream, err_stream] = server_pipe.StartStream();
-  if (err_stream.error_code != transport::kSuccess) {
-    std::cout << "Error on starting pipe stream: " << err_stream.error_code
-              << ' ' << strerror(err_stream._errno) << '\n';
+  auto stream = server_pipe.StartStream();
+  if (!stream) {
+    std::cout << "Error on starting pipe stream: "
+              << static_cast<int>(stream.error()) << '\n';
     return;
   }
   while (true) {
-    auto [md, err_md] = handlers::ReadMetadata(stream);
-    if (err_md.error_code != handlers::ErrReadMd::Success) {
+    auto md = handlers::ReadMetadata(*stream);
+    if (!md) {
       // Reopening a stream to block
-      if (err_md.error_code == handlers::ErrReadMd::Eof) {
-        auto [new_stream, err_stream] = server_pipe.StartStream();
-        stream = std::move(new_stream);
-        if (err_stream.error_code != transport::kSuccess) {
+      if (md.error() == handlers::ErrReadMd::Eof) {
+        auto new_stream = server_pipe.StartStream();
+        if (!new_stream) {
           std::cout << "Error on restarting pipe stream: "
-                    << err_stream.error_code << ' '
-                    << strerror(err_stream._errno) << '\n';
+                    << static_cast<int>(stream.error()) << '\n';
           return;
         }
-        continue;
+        *stream = std::move(*new_stream);
       }
-      if (err_md.error_code == handlers::ErrReadMd::SystemError) {
-        std::cout << "Error on reading metadata: " << strerror(err_md._errno)
-                  << '\n';
+      if (md.error() == handlers::ErrReadMd::SystemError) {
+        std::cout << "System error on reading metadata" << '\n';
       }
+      continue;
     }
-    switch (md.msg_type) {
+    switch (md->msg_type) {
     case kConnectionMsgID:
       std::cout << "Server is answering connection request\n";
       handlers::HandleRequest<messenger::ConnectResponce,
                               messenger::ConnectMessage>(
-          stream, md, [&messeging_service](auto req) -> auto {
+          *stream, *md, [&messeging_service](auto req) -> auto {
             return messeging_service.CreateConnection(req);
           });
       break;
@@ -55,14 +53,14 @@ void main_handler_loop() {
       std::cout << "Server is requested to disconnect\n";
       handlers::HandleRequest<messenger::DisconnectResponce,
                               messenger::DisconnectMessage>(
-          stream, md, [&messeging_service](auto req) -> auto {
+          *stream, *md, [&messeging_service](auto req) -> auto {
             return messeging_service.CloseConnection(req);
           });
       break;
     case kSendMsgID:
       std::cout << "Server is requested to send message\n";
       handlers::HandleRequest<messenger::SendResponce, messenger::SendMessage>(
-          stream, md, [&messeging_service](auto req) -> auto {
+          *stream, *md, [&messeging_service](auto req) -> auto {
             return messeging_service.SendMessage(req);
           });
 

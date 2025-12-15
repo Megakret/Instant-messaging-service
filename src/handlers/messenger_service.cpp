@@ -12,17 +12,15 @@ namespace handlers {
 messenger::ConnectResponce
 MessegingService::CreateConnection(const messenger::ConnectMessage &msg) {
   messenger::ConnectResponce responce;
-  transport::ErrCreation err;
+	transport::PipeErr err;
   std::string recv_pipe_path = std::string(kReceiverDir) + "/" + msg.login();
   auto it = users_.find(msg.login());
   if (it == users_.end()) {
     transport::PipeTransport transport(
         recv_pipe_path, transport::Create | transport::Write, err);
-    if (err.error_code != transport::kSuccess) {
+    if (err != transport::PipeErr::Success) {
       responce.set_status(messenger::ConnectResponce::ERROR);
       responce.set_verbose("failed to create pipe");
-      std::cout << "Failed to create pipe transport(CreateConnection) due to: "
-                << strerror(err._errno) << '\n';
       return responce;
     }
     auto [new_it, res] = users_.insert(
@@ -66,9 +64,10 @@ MessegingService::SendMessage(const messenger::SendMessage &msg) {
   if (receiver.IsConnected()) {
     const auto now = std::chrono::system_clock::now();
     auto err = receiver.SendTo(msg.sender_login(), msg.message(), now);
-    if (err.error_code != SendErr::Success) {
+    if (err != SendToStatus::Success) {
       responce.set_status(messenger::SendResponce::ERROR);
       responce.set_verbose("error during message sending");
+			std::cout << "SendMessage error code: " << static_cast<int>(err) << '\n';
       return responce;
     }
     responce.set_status(messenger::SendResponce::OK);

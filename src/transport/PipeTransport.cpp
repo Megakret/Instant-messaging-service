@@ -1,18 +1,20 @@
 #include <transport/PipeTransport.hpp>
 
 #include <fcntl.h>
+#include <iostream>
+#include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
 
 namespace transport {
-const int kFullPermission = 0600;
+constexpr int kFullPermission = 0600;
 PipeTransport::PipeTransport(const std::string &name, PipeFlags flags,
-                             ErrCreation &err_ref)
+                             PipeErr &err_ref)
     : filename_(name), flags_(flags) {
-  err_ref = ErrCreation{kSuccess};
+  err_ref = PipeErr::Success;
   if (Write & flags && Read & flags) {
-    err_ref = ErrCreation{kErrOpenReadAndWrite, 0};
+    err_ref = PipeErr::WrongFlags;
   }
   if (Create & flags) {
     int status = mkfifo(name.c_str(), kFullPermission);
@@ -20,55 +22,58 @@ PipeTransport::PipeTransport(const std::string &name, PipeFlags flags,
       if (errno == EEXIST) {
         return;
       }
-      err_ref = ErrCreation{kErrCreatePipe, errno};
+      err_ref = PipeErr::CreateFailed;
+      std::cout << "Failed to create pipe: " << strerror(errno) << '\n';
       return;
     }
   }
 }
-ErrSend PipeTransport::Send(std::span<const char> buffer) const {
+std::expected<int, PipeErr>
+PipeTransport::Send(std::span<const char> buffer) const {
   if (!(flags_ & Write)) {
-    return ErrSend{kNoPermissions, errno, 0};
+    return std::unexpected(PipeErr::NoPermission);
   }
-  auto [stream, err] = StartStream();
-  if (err.error_code == kErrOpenPipe) {
-    return ErrSend{kErrOpenPipe, err._errno};
+  auto stream = StartStream();
+  if (stream) {
+    return stream->Send(buffer);
+  } else {
+    return std::unexpected(stream.error());
   }
-  return stream.Send(buffer);
 }
-std::pair<int, ErrReceive>
+std::expected<int, PipeErr>
 PipeTransport::Receive(std::span<char> buffer) const {
   if (!(flags_ & Read)) {
-    return std::make_pair(0, ErrReceive{kNoPermissions, errno});
+    return std::unexpected(PipeErr::NoPermission);
   }
-  auto [stream, err] = StartStream();
-  if (err.error_code == kErrOpenPipe) {
-    return std::make_pair(0, ErrReceive{kErrOpenPipe, err._errno});
+  auto stream = StartStream();
+  if (stream) {
+    return stream->Receive(buffer);
+  } else {
+    return std::unexpected(stream.error());
   }
-  return stream.Receive(buffer);
 }
 
 PipeStream::PipeStream(int pipe_fd) : pipe_fd_(pipe_fd) {}
 PipeStream::PipeStream(PipeStream &&stream) : pipe_fd_(stream.pipe_fd_) {
   stream.pipe_fd_ = -1;
 }
-ErrSend PipeStream::Send(std::span<const char> buffer) const {
+std::expected<int, PipeErr>
+PipeStream::Send(std::span<const char> buffer) const {
   int written = write(pipe_fd_, buffer.data(), buffer.size());
   if (written == -1) {
-    return ErrSend{kErrWriteFailed, errno, 0};
+    std::cout << "Failed to write data: " << strerror(errno) << '\n';
+    return std::unexpected(PipeErr::WriteFailed);
   }
-  if (written < buffer.size()) {
-    return ErrSend{kErrPartialWrite, 0, static_cast<std::size_t>(written)};
-  }
-  return ErrSend{kSuccess, 0, 0};
+  return written;
 }
 
-std::pair<int, ErrReceive> PipeStream::Receive(std::span<char> buffer) const {
+std::expected<int, PipeErr> PipeStream::Receive(std::span<char> buffer) const {
   int read_bytes = read(pipe_fd_, buffer.data(), buffer.size());
-
   if (read_bytes == -1) {
-    return std::make_pair(-1, ErrReceive{kErrReadFailed, errno});
+    std::cout << "Failed to read data: " << strerror(errno) << '\n';
+    return std::unexpected(PipeErr::ReadFailed);
   }
-  return std::make_pair(read_bytes, ErrReceive{kSuccess, 0});
+  return read_bytes;
 }
 PipeStream &PipeStream::operator=(PipeStream &&other) {
   PipeStream moved(std::move(other));
@@ -81,7 +86,7 @@ PipeStream::~PipeStream() {
     close(pipe_fd_);
   }
 }
-std::pair<PipeStream, ErrStartStream> PipeTransport::StartStream() const {
+std::expected<PipeStream, PipeErr> PipeTransport::StartStream() const {
   int pipe_fd;
   if (flags_ & Read) {
     pipe_fd = open(filename_.c_str(), O_RDONLY);
@@ -90,10 +95,9 @@ std::pair<PipeStream, ErrStartStream> PipeTransport::StartStream() const {
     pipe_fd = open(filename_.c_str(), O_WRONLY);
   }
   if (pipe_fd == -1) {
-    return std::make_pair(PipeStream(pipe_fd),
-                          ErrStartStream{kErrOpenPipe, errno});
+    return std::unexpected(PipeErr::OpenFailed);
   }
-  return std::make_pair(PipeStream(pipe_fd), ErrStartStream{kSuccess});
+  return PipeStream(pipe_fd);
 }
 PipeTransport::~PipeTransport() {}
 } // namespace transport

@@ -1,21 +1,18 @@
 #include <handlers/handle.hpp>
 
 namespace handlers {
-std::pair<Metadata, ErrReadMd> ReadMetadata(transport::PipeStream &stream) {
+std::expected<Metadata, ErrReadMd> ReadMetadata(transport::PipeStream &stream) {
   std::array<char, sizeof(Metadata)> buf;
-  auto [read_bytes, err] = stream.Receive(buf);
+  auto read_bytes = stream.Receive(buf);
+  if (!read_bytes) {
+    return std::unexpected(ErrReadMd::SystemError);
+  }
   if (read_bytes == 0) {
-    return std::make_pair(Metadata{}, ErrReadMd{ErrReadMd::Eof});
+    return std::unexpected(ErrReadMd::Eof);
   }
-
-  if (read_bytes < buf.size()) {
-    return std::make_pair(Metadata{}, ErrReadMd{ErrReadMd::Success});
+  if (*read_bytes < buf.size()) {
+    return std::unexpected(ErrReadMd::PartialRead);
   }
-  if (err.error_code != transport::kSuccess) {
-    return std::make_pair(Metadata{},
-                          ErrReadMd{ErrReadMd::SystemError, err._errno});
-  }
-  return std::make_pair(*reinterpret_cast<Metadata *>(buf.data()),
-                        ErrReadMd{ErrReadMd::Success, 0});
+  return *reinterpret_cast<const Metadata *>(buf.data());
 }
 } // namespace handlers

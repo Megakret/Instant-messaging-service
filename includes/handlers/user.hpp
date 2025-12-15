@@ -7,15 +7,7 @@
 #include <transport/PipeTransport.hpp>
 
 namespace handlers {
-struct SendErr {
-	enum Codes{
-		Success,
-		SystemErr,
-		SerializationErr,
-	};
-  Codes error_code;
-  int _errno;
-};
+enum class SendToStatus { Success, SystemErr, SerializationErr };
 class User {
 public:
   User(const std::string &login, const transport::PipeTransport &transport);
@@ -25,7 +17,7 @@ public:
   void OnDisconnect();
   bool IsConnected();
   transport::PipeTransport &GetTransport();
-  SendErr
+  SendToStatus
   SendTo(std::string sender_login, std::string message,
          std::chrono::time_point<std::chrono::system_clock> sending_time);
 
