@@ -18,8 +18,18 @@ struct ResponseMetadata {
 enum class BindMdAndSendErr { Success, TransportErr, SerializationErr };
 template <typename ProtoMessage, typename MetadataT>
 BindMdAndSendErr
-BindMetadataAndSend(const ProtoMessage &msg, const MetadataT &metadata,
-                    const transport::PipeTransport &user_transport) {
+BindMetadataAndSend(const ProtoMessage& msg, const MetadataT& metadata,
+                    const transport::PipeTransport& user_transport) {
+	auto stream = user_transport.StartStream();
+	if(!stream){
+		return BindMdAndSendErr::TransportErr;
+	}
+  return BindMetadataAndSend(msg, metadata, *stream);
+}
+template <typename ProtoMessage, typename MetadataT>
+BindMdAndSendErr BindMetadataAndSend(const ProtoMessage& msg,
+                                     const MetadataT& metadata,
+                                     const transport::PipeStream& user_stream) {
   std::vector<char> user_buf(sizeof(MetadataT) + msg.ByteSizeLong());
   std::span<char> user_buf_span(user_buf);
   std::span<char> metadata_buf = user_buf_span.subspan(0, sizeof(MetadataT));
@@ -29,7 +39,7 @@ BindMetadataAndSend(const ProtoMessage &msg, const MetadataT &metadata,
   if (!msg.SerializeToArray(msg_buf.data(), msg_buf.size())) {
     return BindMdAndSendErr::SerializationErr;
   };
-  auto written_bytes = user_transport.Send(user_buf_span);
+  auto written_bytes = user_stream.Send(user_buf_span);
   if (!written_bytes) {
     return BindMdAndSendErr::TransportErr;
   }
@@ -37,7 +47,7 @@ BindMetadataAndSend(const ProtoMessage &msg, const MetadataT &metadata,
 }
 
 template <typename ProtoResponse, typename ProtoRequest>
-void HandleRequest(transport::PipeStream &server_stream, const Metadata &md,
+void HandleRequest(transport::PipeStream& server_stream, const Metadata& md,
                    std::function<ProtoResponse(ProtoRequest)> handler) {
   ProtoRequest request;
   std::string buf(md.length, '\0');
@@ -72,5 +82,5 @@ enum class ErrReadMd {
   SystemError,
   Eof,
 };
-std::expected<Metadata, ErrReadMd> ReadMetadata(transport::PipeStream &stream);
+std::expected<Metadata, ErrReadMd> ReadMetadata(transport::PipeStream& stream);
 } // namespace handlers

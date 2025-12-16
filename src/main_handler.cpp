@@ -6,7 +6,7 @@
 #include <protos/main.pb.h>
 
 void main_handler_loop() {
-	handlers::UserStorage users;
+	UserStorage users;
   handlers::MessegingService messeging_service(users);
   transport::PipeErr err;
   transport::PipeTransport server_pipe(std::string(kAcceptingPipePath),
