@@ -46,3 +46,17 @@ message SendResponce{
   StatusType status = 1;
   string verbose = 2;
 }
+message SendPostponedRequest{
+  MessageForUser msg = 1;
+  string receiver = 2;
+  //time in seconds since epoch
+  string pipe_path = 3;
+}
+message SendPostponedResponce{
+  enum StatusType{
+    OK = 0;
+    ERROR = 1;
+  }
+  StatusType status = 1;
+  string verbose = 2;
+}

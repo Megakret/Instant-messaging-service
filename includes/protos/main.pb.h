@@ -58,6 +58,8 @@ enum ConnectResponce_StatusType : int;
 extern const uint32_t ConnectResponce_StatusType_internal_data_[];
 enum DisconnectResponce_StatusType : int;
 extern const uint32_t DisconnectResponce_StatusType_internal_data_[];
+enum SendPostponedResponce_StatusType : int;
+extern const uint32_t SendPostponedResponce_StatusType_internal_data_[];
 enum SendResponce_StatusType : int;
 extern const uint32_t SendResponce_StatusType_internal_data_[];
 class ConnectMessage;
@@ -84,6 +86,14 @@ class SendMessage;
 struct SendMessageDefaultTypeInternal;
 extern SendMessageDefaultTypeInternal _SendMessage_default_instance_;
 extern const ::google::protobuf::internal::ClassDataFull SendMessage_class_data_;
+class SendPostponedRequest;
+struct SendPostponedRequestDefaultTypeInternal;
+extern SendPostponedRequestDefaultTypeInternal _SendPostponedRequest_default_instance_;
+extern const ::google::protobuf::internal::ClassDataFull SendPostponedRequest_class_data_;
+class SendPostponedResponce;
+struct SendPostponedResponceDefaultTypeInternal;
+extern SendPostponedResponceDefaultTypeInternal _SendPostponedResponce_default_instance_;
+extern const ::google::protobuf::internal::ClassDataFull SendPostponedResponce_class_data_;
 class SendResponce;
 struct SendResponceDefaultTypeInternal;
 extern SendResponceDefaultTypeInternal _SendResponce_default_instance_;
@@ -97,6 +107,9 @@ internal::EnumTraitsT<::messenger::ConnectResponce_StatusType_internal_data_>
 template <>
 internal::EnumTraitsT<::messenger::DisconnectResponce_StatusType_internal_data_>
     internal::EnumTraitsImpl::value<::messenger::DisconnectResponce_StatusType>;
+template <>
+internal::EnumTraitsT<::messenger::SendPostponedResponce_StatusType_internal_data_>
+    internal::EnumTraitsImpl::value<::messenger::SendPostponedResponce_StatusType>;
 template <>
 internal::EnumTraitsT<::messenger::SendResponce_StatusType_internal_data_>
     internal::EnumTraitsImpl::value<::messenger::SendResponce_StatusType>;
@@ -210,6 +223,42 @@ inline const ::std::string& SendResponce_StatusType_Name(SendResponce_StatusType
 inline bool SendResponce_StatusType_Parse(
     ::absl::string_view name, SendResponce_StatusType* PROTOBUF_NONNULL value) {
   return ::google::protobuf::internal::ParseNamedEnum<SendResponce_StatusType>(SendResponce_StatusType_descriptor(), name,
+                                           value);
+}
+enum SendPostponedResponce_StatusType : int {
+  SendPostponedResponce_StatusType_OK = 0,
+  SendPostponedResponce_StatusType_ERROR = 1,
+  SendPostponedResponce_StatusType_SendPostponedResponce_StatusType_INT_MIN_SENTINEL_DO_NOT_USE_ =
+      ::std::numeric_limits<::int32_t>::min(),
+  SendPostponedResponce_StatusType_SendPostponedResponce_StatusType_INT_MAX_SENTINEL_DO_NOT_USE_ =
+      ::std::numeric_limits<::int32_t>::max(),
+};
+
+extern const uint32_t SendPostponedResponce_StatusType_internal_data_[];
+inline constexpr SendPostponedResponce_StatusType SendPostponedResponce_StatusType_StatusType_MIN =
+    static_cast<SendPostponedResponce_StatusType>(0);
+inline constexpr SendPostponedResponce_StatusType SendPostponedResponce_StatusType_StatusType_MAX =
+    static_cast<SendPostponedResponce_StatusType>(1);
+inline bool SendPostponedResponce_StatusType_IsValid(int value) {
+  return 0 <= value && value <= 1;
+}
+inline constexpr int SendPostponedResponce_StatusType_StatusType_ARRAYSIZE = 1 + 1;
+const ::google::protobuf::EnumDescriptor* PROTOBUF_NONNULL SendPostponedResponce_StatusType_descriptor();
+template <typename T>
+const ::std::string& SendPostponedResponce_StatusType_Name(T value) {
+  static_assert(::std::is_same<T, SendPostponedResponce_StatusType>::value ||
+                    ::std::is_integral<T>::value,
+                "Incorrect type passed to StatusType_Name().");
+  return SendPostponedResponce_StatusType_Name(static_cast<SendPostponedResponce_StatusType>(value));
+}
+template <>
+inline const ::std::string& SendPostponedResponce_StatusType_Name(SendPostponedResponce_StatusType value) {
+  return ::google::protobuf::internal::NameOfDenseEnum<SendPostponedResponce_StatusType_descriptor, 0, 1>(
+      static_cast<int>(value));
+}
+inline bool SendPostponedResponce_StatusType_Parse(
+    ::absl::string_view name, SendPostponedResponce_StatusType* PROTOBUF_NONNULL value) {
+  return ::google::protobuf::internal::ParseNamedEnum<SendPostponedResponce_StatusType>(SendPostponedResponce_StatusType_descriptor(), name,
                                            value);
 }
 
@@ -445,6 +494,235 @@ class SendResponce final : public ::google::protobuf::Message
 };
 
 extern const ::google::protobuf::internal::ClassDataFull SendResponce_class_data_;
+// -------------------------------------------------------------------
+
+class SendPostponedResponce final : public ::google::protobuf::Message
+/* @@protoc_insertion_point(class_definition:messenger.SendPostponedResponce) */ {
+ public:
+  inline SendPostponedResponce() : SendPostponedResponce(nullptr) {}
+  ~SendPostponedResponce() PROTOBUF_FINAL;
+
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+  void operator delete(SendPostponedResponce* PROTOBUF_NONNULL msg, ::std::destroying_delete_t) {
+    SharedDtor(*msg);
+    ::google::protobuf::internal::SizedDelete(msg, sizeof(SendPostponedResponce));
+  }
+#endif
+
+  template <typename = void>
+  explicit PROTOBUF_CONSTEXPR SendPostponedResponce(::google::protobuf::internal::ConstantInitialized);
+
+  inline SendPostponedResponce(const SendPostponedResponce& from) : SendPostponedResponce(nullptr, from) {}
+  inline SendPostponedResponce(SendPostponedResponce&& from) noexcept
+      : SendPostponedResponce(nullptr, ::std::move(from)) {}
+  inline SendPostponedResponce& operator=(const SendPostponedResponce& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline SendPostponedResponce& operator=(SendPostponedResponce&& from) noexcept {
+    if (this == &from) return *this;
+    if (::google::protobuf::internal::CanMoveWithInternalSwap(GetArena(), from.GetArena())) {
+      InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  inline const ::google::protobuf::UnknownFieldSet& unknown_fields() const
+      ABSL_ATTRIBUTE_LIFETIME_BOUND {
+    return _internal_metadata_.unknown_fields<::google::protobuf::UnknownFieldSet>(::google::protobuf::UnknownFieldSet::default_instance);
+  }
+  inline ::google::protobuf::UnknownFieldSet* PROTOBUF_NONNULL mutable_unknown_fields()
+      ABSL_ATTRIBUTE_LIFETIME_BOUND {
+    return _internal_metadata_.mutable_unknown_fields<::google::protobuf::UnknownFieldSet>();
+  }
+
+  static const ::google::protobuf::Descriptor* PROTOBUF_NONNULL descriptor() {
+    return GetDescriptor();
+  }
+  static const ::google::protobuf::Descriptor* PROTOBUF_NONNULL GetDescriptor() {
+    return default_instance().GetMetadata().descriptor;
+  }
+  static const ::google::protobuf::Reflection* PROTOBUF_NONNULL GetReflection() {
+    return default_instance().GetMetadata().reflection;
+  }
+  static const SendPostponedResponce& default_instance() {
+    return *reinterpret_cast<const SendPostponedResponce*>(
+        &_SendPostponedResponce_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages = 8;
+  friend void swap(SendPostponedResponce& a, SendPostponedResponce& b) { a.Swap(&b); }
+  inline void Swap(SendPostponedResponce* PROTOBUF_NONNULL other) {
+    if (other == this) return;
+    if (::google::protobuf::internal::CanUseInternalSwap(GetArena(), other->GetArena())) {
+      InternalSwap(other);
+    } else {
+      ::google::protobuf::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(SendPostponedResponce* PROTOBUF_NONNULL other) {
+    if (other == this) return;
+    ABSL_DCHECK(GetArena() == other->GetArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  SendPostponedResponce* PROTOBUF_NONNULL New(::google::protobuf::Arena* PROTOBUF_NULLABLE arena = nullptr) const {
+    return ::google::protobuf::Message::DefaultConstruct<SendPostponedResponce>(arena);
+  }
+  using ::google::protobuf::Message::CopyFrom;
+  void CopyFrom(const SendPostponedResponce& from);
+  using ::google::protobuf::Message::MergeFrom;
+  void MergeFrom(const SendPostponedResponce& from) { SendPostponedResponce::MergeImpl(*this, from); }
+
+  private:
+  static void MergeImpl(::google::protobuf::MessageLite& to_msg,
+                        const ::google::protobuf::MessageLite& from_msg);
+
+  public:
+  bool IsInitialized() const {
+    return true;
+  }
+  ABSL_ATTRIBUTE_REINITIALIZES void Clear() PROTOBUF_FINAL;
+  #if defined(PROTOBUF_CUSTOM_VTABLE)
+  private:
+  static ::size_t ByteSizeLong(const ::google::protobuf::MessageLite& msg);
+  static ::uint8_t* PROTOBUF_NONNULL _InternalSerialize(
+      const ::google::protobuf::MessageLite& msg, ::uint8_t* PROTOBUF_NONNULL target,
+      ::google::protobuf::io::EpsCopyOutputStream* PROTOBUF_NONNULL stream);
+
+  public:
+  ::size_t ByteSizeLong() const { return ByteSizeLong(*this); }
+  ::uint8_t* PROTOBUF_NONNULL _InternalSerialize(
+      ::uint8_t* PROTOBUF_NONNULL target,
+      ::google::protobuf::io::EpsCopyOutputStream* PROTOBUF_NONNULL stream) const {
+    return _InternalSerialize(*this, target, stream);
+  }
+  #else   // PROTOBUF_CUSTOM_VTABLE
+  ::size_t ByteSizeLong() const final;
+  ::uint8_t* PROTOBUF_NONNULL _InternalSerialize(
+      ::uint8_t* PROTOBUF_NONNULL target,
+      ::google::protobuf::io::EpsCopyOutputStream* PROTOBUF_NONNULL stream) const final;
+  #endif  // PROTOBUF_CUSTOM_VTABLE
+  int GetCachedSize() const { return _impl_._cached_size_.Get(); }
+
+  private:
+  void SharedCtor(::google::protobuf::Arena* PROTOBUF_NULLABLE arena);
+  static void SharedDtor(MessageLite& self);
+  void InternalSwap(SendPostponedResponce* PROTOBUF_NONNULL other);
+ private:
+  template <typename T>
+  friend ::absl::string_view(::google::protobuf::internal::GetAnyMessageName)();
+  static ::absl::string_view FullMessageName() { return "messenger.SendPostponedResponce"; }
+
+  explicit SendPostponedResponce(::google::protobuf::Arena* PROTOBUF_NULLABLE arena);
+  SendPostponedResponce(::google::protobuf::Arena* PROTOBUF_NULLABLE arena, const SendPostponedResponce& from);
+  SendPostponedResponce(
+      ::google::protobuf::Arena* PROTOBUF_NULLABLE arena, SendPostponedResponce&& from) noexcept
+      : SendPostponedResponce(arena) {
+    *this = ::std::move(from);
+  }
+  const ::google::protobuf::internal::ClassData* PROTOBUF_NONNULL GetClassData() const PROTOBUF_FINAL;
+  static void* PROTOBUF_NONNULL PlacementNew_(
+      const void* PROTOBUF_NONNULL, void* PROTOBUF_NONNULL mem,
+      ::google::protobuf::Arena* PROTOBUF_NULLABLE arena);
+  static constexpr auto InternalNewImpl_();
+
+ public:
+  static constexpr auto InternalGenerateClassData_();
+
+  ::google::protobuf::Metadata GetMetadata() const;
+  // nested types ----------------------------------------------------
+  using StatusType = SendPostponedResponce_StatusType;
+  static constexpr StatusType OK = SendPostponedResponce_StatusType_OK;
+  static constexpr StatusType ERROR = SendPostponedResponce_StatusType_ERROR;
+  static inline bool StatusType_IsValid(int value) {
+    return SendPostponedResponce_StatusType_IsValid(value);
+  }
+  static constexpr StatusType StatusType_MIN = SendPostponedResponce_StatusType_StatusType_MIN;
+  static constexpr StatusType StatusType_MAX = SendPostponedResponce_StatusType_StatusType_MAX;
+  static constexpr int StatusType_ARRAYSIZE = SendPostponedResponce_StatusType_StatusType_ARRAYSIZE;
+  static inline const ::google::protobuf::EnumDescriptor* PROTOBUF_NONNULL StatusType_descriptor() {
+    return SendPostponedResponce_StatusType_descriptor();
+  }
+  template <typename T>
+  static inline const ::std::string& StatusType_Name(T value) {
+    return SendPostponedResponce_StatusType_Name(value);
+  }
+  static inline bool StatusType_Parse(
+      ::absl::string_view name, StatusType* PROTOBUF_NONNULL value) {
+    return SendPostponedResponce_StatusType_Parse(name, value);
+  }
+
+  // accessors -------------------------------------------------------
+  enum : int {
+    kVerboseFieldNumber = 2,
+    kStatusFieldNumber = 1,
+  };
+  // string verbose = 2;
+  bool has_verbose() const;
+  void clear_verbose() ;
+  const ::std::string& verbose() const;
+  template <typename Arg_ = const ::std::string&, typename... Args_>
+  void set_verbose(Arg_&& arg, Args_... args);
+  ::std::string* PROTOBUF_NONNULL mutable_verbose();
+  [[nodiscard]] ::std::string* PROTOBUF_NULLABLE release_verbose();
+  void set_allocated_verbose(::std::string* PROTOBUF_NULLABLE value);
+
+  private:
+  const ::std::string& _internal_verbose() const;
+  PROTOBUF_ALWAYS_INLINE void _internal_set_verbose(const ::std::string& value);
+  ::std::string* PROTOBUF_NONNULL _internal_mutable_verbose();
+
+  public:
+  // .messenger.SendPostponedResponce.StatusType status = 1;
+  bool has_status() const;
+  void clear_status() ;
+  ::messenger::SendPostponedResponce_StatusType status() const;
+  void set_status(::messenger::SendPostponedResponce_StatusType value);
+
+  private:
+  ::messenger::SendPostponedResponce_StatusType _internal_status() const;
+  void _internal_set_status(::messenger::SendPostponedResponce_StatusType value);
+
+  public:
+  // @@protoc_insertion_point(class_scope:messenger.SendPostponedResponce)
+ private:
+  class _Internal;
+  friend class ::google::protobuf::internal::TcParser;
+  static const ::google::protobuf::internal::TcParseTable<1, 2,
+                                   0, 47,
+                                   2>
+      _table_;
+
+  friend class ::google::protobuf::MessageLite;
+  friend class ::google::protobuf::Arena;
+  template <typename T>
+  friend class ::google::protobuf::Arena::InternalHelper;
+  using InternalArenaConstructable_ = void;
+  using DestructorSkippable_ = void;
+  struct Impl_ {
+    inline explicit constexpr Impl_(::google::protobuf::internal::ConstantInitialized) noexcept;
+    inline explicit Impl_(
+        ::google::protobuf::internal::InternalVisibility visibility,
+        ::google::protobuf::Arena* PROTOBUF_NULLABLE arena);
+    inline explicit Impl_(
+        ::google::protobuf::internal::InternalVisibility visibility,
+        ::google::protobuf::Arena* PROTOBUF_NULLABLE arena, const Impl_& from,
+        const SendPostponedResponce& from_msg);
+    ::google::protobuf::internal::HasBits<1> _has_bits_;
+    ::google::protobuf::internal::CachedSize _cached_size_;
+    ::google::protobuf::internal::ArenaStringPtr verbose_;
+    int status_;
+    PROTOBUF_TSAN_DECLARE_MEMBER
+  };
+  union { Impl_ _impl_; };
+  friend struct ::TableStruct_main_2eproto;
+};
+
+extern const ::google::protobuf::internal::ClassDataFull SendPostponedResponce_class_data_;
 // -------------------------------------------------------------------
 
 class SendMessage final : public ::google::protobuf::Message
@@ -1826,6 +2104,237 @@ class ConnectMessage final : public ::google::protobuf::Message
 };
 
 extern const ::google::protobuf::internal::ClassDataFull ConnectMessage_class_data_;
+// -------------------------------------------------------------------
+
+class SendPostponedRequest final : public ::google::protobuf::Message
+/* @@protoc_insertion_point(class_definition:messenger.SendPostponedRequest) */ {
+ public:
+  inline SendPostponedRequest() : SendPostponedRequest(nullptr) {}
+  ~SendPostponedRequest() PROTOBUF_FINAL;
+
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+  void operator delete(SendPostponedRequest* PROTOBUF_NONNULL msg, ::std::destroying_delete_t) {
+    SharedDtor(*msg);
+    ::google::protobuf::internal::SizedDelete(msg, sizeof(SendPostponedRequest));
+  }
+#endif
+
+  template <typename = void>
+  explicit PROTOBUF_CONSTEXPR SendPostponedRequest(::google::protobuf::internal::ConstantInitialized);
+
+  inline SendPostponedRequest(const SendPostponedRequest& from) : SendPostponedRequest(nullptr, from) {}
+  inline SendPostponedRequest(SendPostponedRequest&& from) noexcept
+      : SendPostponedRequest(nullptr, ::std::move(from)) {}
+  inline SendPostponedRequest& operator=(const SendPostponedRequest& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline SendPostponedRequest& operator=(SendPostponedRequest&& from) noexcept {
+    if (this == &from) return *this;
+    if (::google::protobuf::internal::CanMoveWithInternalSwap(GetArena(), from.GetArena())) {
+      InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  inline const ::google::protobuf::UnknownFieldSet& unknown_fields() const
+      ABSL_ATTRIBUTE_LIFETIME_BOUND {
+    return _internal_metadata_.unknown_fields<::google::protobuf::UnknownFieldSet>(::google::protobuf::UnknownFieldSet::default_instance);
+  }
+  inline ::google::protobuf::UnknownFieldSet* PROTOBUF_NONNULL mutable_unknown_fields()
+      ABSL_ATTRIBUTE_LIFETIME_BOUND {
+    return _internal_metadata_.mutable_unknown_fields<::google::protobuf::UnknownFieldSet>();
+  }
+
+  static const ::google::protobuf::Descriptor* PROTOBUF_NONNULL descriptor() {
+    return GetDescriptor();
+  }
+  static const ::google::protobuf::Descriptor* PROTOBUF_NONNULL GetDescriptor() {
+    return default_instance().GetMetadata().descriptor;
+  }
+  static const ::google::protobuf::Reflection* PROTOBUF_NONNULL GetReflection() {
+    return default_instance().GetMetadata().reflection;
+  }
+  static const SendPostponedRequest& default_instance() {
+    return *reinterpret_cast<const SendPostponedRequest*>(
+        &_SendPostponedRequest_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages = 7;
+  friend void swap(SendPostponedRequest& a, SendPostponedRequest& b) { a.Swap(&b); }
+  inline void Swap(SendPostponedRequest* PROTOBUF_NONNULL other) {
+    if (other == this) return;
+    if (::google::protobuf::internal::CanUseInternalSwap(GetArena(), other->GetArena())) {
+      InternalSwap(other);
+    } else {
+      ::google::protobuf::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(SendPostponedRequest* PROTOBUF_NONNULL other) {
+    if (other == this) return;
+    ABSL_DCHECK(GetArena() == other->GetArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  SendPostponedRequest* PROTOBUF_NONNULL New(::google::protobuf::Arena* PROTOBUF_NULLABLE arena = nullptr) const {
+    return ::google::protobuf::Message::DefaultConstruct<SendPostponedRequest>(arena);
+  }
+  using ::google::protobuf::Message::CopyFrom;
+  void CopyFrom(const SendPostponedRequest& from);
+  using ::google::protobuf::Message::MergeFrom;
+  void MergeFrom(const SendPostponedRequest& from) { SendPostponedRequest::MergeImpl(*this, from); }
+
+  private:
+  static void MergeImpl(::google::protobuf::MessageLite& to_msg,
+                        const ::google::protobuf::MessageLite& from_msg);
+
+  public:
+  bool IsInitialized() const {
+    return true;
+  }
+  ABSL_ATTRIBUTE_REINITIALIZES void Clear() PROTOBUF_FINAL;
+  #if defined(PROTOBUF_CUSTOM_VTABLE)
+  private:
+  static ::size_t ByteSizeLong(const ::google::protobuf::MessageLite& msg);
+  static ::uint8_t* PROTOBUF_NONNULL _InternalSerialize(
+      const ::google::protobuf::MessageLite& msg, ::uint8_t* PROTOBUF_NONNULL target,
+      ::google::protobuf::io::EpsCopyOutputStream* PROTOBUF_NONNULL stream);
+
+  public:
+  ::size_t ByteSizeLong() const { return ByteSizeLong(*this); }
+  ::uint8_t* PROTOBUF_NONNULL _InternalSerialize(
+      ::uint8_t* PROTOBUF_NONNULL target,
+      ::google::protobuf::io::EpsCopyOutputStream* PROTOBUF_NONNULL stream) const {
+    return _InternalSerialize(*this, target, stream);
+  }
+  #else   // PROTOBUF_CUSTOM_VTABLE
+  ::size_t ByteSizeLong() const final;
+  ::uint8_t* PROTOBUF_NONNULL _InternalSerialize(
+      ::uint8_t* PROTOBUF_NONNULL target,
+      ::google::protobuf::io::EpsCopyOutputStream* PROTOBUF_NONNULL stream) const final;
+  #endif  // PROTOBUF_CUSTOM_VTABLE
+  int GetCachedSize() const { return _impl_._cached_size_.Get(); }
+
+  private:
+  void SharedCtor(::google::protobuf::Arena* PROTOBUF_NULLABLE arena);
+  static void SharedDtor(MessageLite& self);
+  void InternalSwap(SendPostponedRequest* PROTOBUF_NONNULL other);
+ private:
+  template <typename T>
+  friend ::absl::string_view(::google::protobuf::internal::GetAnyMessageName)();
+  static ::absl::string_view FullMessageName() { return "messenger.SendPostponedRequest"; }
+
+  explicit SendPostponedRequest(::google::protobuf::Arena* PROTOBUF_NULLABLE arena);
+  SendPostponedRequest(::google::protobuf::Arena* PROTOBUF_NULLABLE arena, const SendPostponedRequest& from);
+  SendPostponedRequest(
+      ::google::protobuf::Arena* PROTOBUF_NULLABLE arena, SendPostponedRequest&& from) noexcept
+      : SendPostponedRequest(arena) {
+    *this = ::std::move(from);
+  }
+  const ::google::protobuf::internal::ClassData* PROTOBUF_NONNULL GetClassData() const PROTOBUF_FINAL;
+  static void* PROTOBUF_NONNULL PlacementNew_(
+      const void* PROTOBUF_NONNULL, void* PROTOBUF_NONNULL mem,
+      ::google::protobuf::Arena* PROTOBUF_NULLABLE arena);
+  static constexpr auto InternalNewImpl_();
+
+ public:
+  static constexpr auto InternalGenerateClassData_();
+
+  ::google::protobuf::Metadata GetMetadata() const;
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+  enum : int {
+    kReceiverFieldNumber = 2,
+    kPipePathFieldNumber = 3,
+    kMsgFieldNumber = 1,
+  };
+  // string receiver = 2;
+  bool has_receiver() const;
+  void clear_receiver() ;
+  const ::std::string& receiver() const;
+  template <typename Arg_ = const ::std::string&, typename... Args_>
+  void set_receiver(Arg_&& arg, Args_... args);
+  ::std::string* PROTOBUF_NONNULL mutable_receiver();
+  [[nodiscard]] ::std::string* PROTOBUF_NULLABLE release_receiver();
+  void set_allocated_receiver(::std::string* PROTOBUF_NULLABLE value);
+
+  private:
+  const ::std::string& _internal_receiver() const;
+  PROTOBUF_ALWAYS_INLINE void _internal_set_receiver(const ::std::string& value);
+  ::std::string* PROTOBUF_NONNULL _internal_mutable_receiver();
+
+  public:
+  // string pipe_path = 3;
+  bool has_pipe_path() const;
+  void clear_pipe_path() ;
+  const ::std::string& pipe_path() const;
+  template <typename Arg_ = const ::std::string&, typename... Args_>
+  void set_pipe_path(Arg_&& arg, Args_... args);
+  ::std::string* PROTOBUF_NONNULL mutable_pipe_path();
+  [[nodiscard]] ::std::string* PROTOBUF_NULLABLE release_pipe_path();
+  void set_allocated_pipe_path(::std::string* PROTOBUF_NULLABLE value);
+
+  private:
+  const ::std::string& _internal_pipe_path() const;
+  PROTOBUF_ALWAYS_INLINE void _internal_set_pipe_path(const ::std::string& value);
+  ::std::string* PROTOBUF_NONNULL _internal_mutable_pipe_path();
+
+  public:
+  // .messenger.MessageForUser msg = 1;
+  bool has_msg() const;
+  void clear_msg() ;
+  const ::messenger::MessageForUser& msg() const;
+  [[nodiscard]] ::messenger::MessageForUser* PROTOBUF_NULLABLE release_msg();
+  ::messenger::MessageForUser* PROTOBUF_NONNULL mutable_msg();
+  void set_allocated_msg(::messenger::MessageForUser* PROTOBUF_NULLABLE value);
+  void unsafe_arena_set_allocated_msg(::messenger::MessageForUser* PROTOBUF_NULLABLE value);
+  ::messenger::MessageForUser* PROTOBUF_NULLABLE unsafe_arena_release_msg();
+
+  private:
+  const ::messenger::MessageForUser& _internal_msg() const;
+  ::messenger::MessageForUser* PROTOBUF_NONNULL _internal_mutable_msg();
+
+  public:
+  // @@protoc_insertion_point(class_scope:messenger.SendPostponedRequest)
+ private:
+  class _Internal;
+  friend class ::google::protobuf::internal::TcParser;
+  static const ::google::protobuf::internal::TcParseTable<2, 3,
+                                   1, 56,
+                                   2>
+      _table_;
+
+  friend class ::google::protobuf::MessageLite;
+  friend class ::google::protobuf::Arena;
+  template <typename T>
+  friend class ::google::protobuf::Arena::InternalHelper;
+  using InternalArenaConstructable_ = void;
+  using DestructorSkippable_ = void;
+  struct Impl_ {
+    inline explicit constexpr Impl_(::google::protobuf::internal::ConstantInitialized) noexcept;
+    inline explicit Impl_(
+        ::google::protobuf::internal::InternalVisibility visibility,
+        ::google::protobuf::Arena* PROTOBUF_NULLABLE arena);
+    inline explicit Impl_(
+        ::google::protobuf::internal::InternalVisibility visibility,
+        ::google::protobuf::Arena* PROTOBUF_NULLABLE arena, const Impl_& from,
+        const SendPostponedRequest& from_msg);
+    ::google::protobuf::internal::HasBits<1> _has_bits_;
+    ::google::protobuf::internal::CachedSize _cached_size_;
+    ::google::protobuf::internal::ArenaStringPtr receiver_;
+    ::google::protobuf::internal::ArenaStringPtr pipe_path_;
+    ::messenger::MessageForUser* PROTOBUF_NULLABLE msg_;
+    PROTOBUF_TSAN_DECLARE_MEMBER
+  };
+  union { Impl_ _impl_; };
+  friend struct ::TableStruct_main_2eproto;
+};
+
+extern const ::google::protobuf::internal::ClassDataFull SendPostponedRequest_class_data_;
 
 // ===================================================================
 
@@ -2949,6 +3458,349 @@ inline void SendResponce::set_allocated_verbose(::std::string* PROTOBUF_NULLABLE
   // @@protoc_insertion_point(field_set_allocated:messenger.SendResponce.verbose)
 }
 
+// -------------------------------------------------------------------
+
+// SendPostponedRequest
+
+// .messenger.MessageForUser msg = 1;
+inline bool SendPostponedRequest::has_msg() const {
+  bool value = CheckHasBit(_impl_._has_bits_[0], 0x00000004U);
+  PROTOBUF_ASSUME(!value || _impl_.msg_ != nullptr);
+  return value;
+}
+inline void SendPostponedRequest::clear_msg() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  if (_impl_.msg_ != nullptr) _impl_.msg_->Clear();
+  ClearHasBit(_impl_._has_bits_[0],
+                  0x00000004U);
+}
+inline const ::messenger::MessageForUser& SendPostponedRequest::_internal_msg() const {
+  ::google::protobuf::internal::TSanRead(&_impl_);
+  const ::messenger::MessageForUser* p = _impl_.msg_;
+  return p != nullptr ? *p : reinterpret_cast<const ::messenger::MessageForUser&>(::messenger::_MessageForUser_default_instance_);
+}
+inline const ::messenger::MessageForUser& SendPostponedRequest::msg() const ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  // @@protoc_insertion_point(field_get:messenger.SendPostponedRequest.msg)
+  return _internal_msg();
+}
+inline void SendPostponedRequest::unsafe_arena_set_allocated_msg(
+    ::messenger::MessageForUser* PROTOBUF_NULLABLE value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  if (GetArena() == nullptr) {
+    delete reinterpret_cast<::google::protobuf::MessageLite*>(_impl_.msg_);
+  }
+  _impl_.msg_ = reinterpret_cast<::messenger::MessageForUser*>(value);
+  if (value != nullptr) {
+    SetHasBit(_impl_._has_bits_[0], 0x00000004U);
+  } else {
+    ClearHasBit(_impl_._has_bits_[0], 0x00000004U);
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:messenger.SendPostponedRequest.msg)
+}
+inline ::messenger::MessageForUser* PROTOBUF_NULLABLE SendPostponedRequest::release_msg() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+
+  ClearHasBit(_impl_._has_bits_[0], 0x00000004U);
+  ::messenger::MessageForUser* released = _impl_.msg_;
+  _impl_.msg_ = nullptr;
+  if (::google::protobuf::internal::DebugHardenForceCopyInRelease()) {
+    auto* old = reinterpret_cast<::google::protobuf::MessageLite*>(released);
+    released = ::google::protobuf::internal::DuplicateIfNonNull(released);
+    if (GetArena() == nullptr) {
+      delete old;
+    }
+  } else {
+    if (GetArena() != nullptr) {
+      released = ::google::protobuf::internal::DuplicateIfNonNull(released);
+    }
+  }
+  return released;
+}
+inline ::messenger::MessageForUser* PROTOBUF_NULLABLE SendPostponedRequest::unsafe_arena_release_msg() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  // @@protoc_insertion_point(field_release:messenger.SendPostponedRequest.msg)
+
+  ClearHasBit(_impl_._has_bits_[0], 0x00000004U);
+  ::messenger::MessageForUser* temp = _impl_.msg_;
+  _impl_.msg_ = nullptr;
+  return temp;
+}
+inline ::messenger::MessageForUser* PROTOBUF_NONNULL SendPostponedRequest::_internal_mutable_msg() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  if (_impl_.msg_ == nullptr) {
+    auto* p = ::google::protobuf::Message::DefaultConstruct<::messenger::MessageForUser>(GetArena());
+    _impl_.msg_ = reinterpret_cast<::messenger::MessageForUser*>(p);
+  }
+  return _impl_.msg_;
+}
+inline ::messenger::MessageForUser* PROTOBUF_NONNULL SendPostponedRequest::mutable_msg()
+    ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  SetHasBit(_impl_._has_bits_[0], 0x00000004U);
+  ::messenger::MessageForUser* _msg = _internal_mutable_msg();
+  // @@protoc_insertion_point(field_mutable:messenger.SendPostponedRequest.msg)
+  return _msg;
+}
+inline void SendPostponedRequest::set_allocated_msg(::messenger::MessageForUser* PROTOBUF_NULLABLE value) {
+  ::google::protobuf::Arena* message_arena = GetArena();
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  if (message_arena == nullptr) {
+    delete reinterpret_cast<::google::protobuf::MessageLite*>(_impl_.msg_);
+  }
+
+  if (value != nullptr) {
+    ::google::protobuf::Arena* submessage_arena = value->GetArena();
+    if (message_arena != submessage_arena) {
+      value = ::google::protobuf::internal::GetOwnedMessage(message_arena, value, submessage_arena);
+    }
+    SetHasBit(_impl_._has_bits_[0], 0x00000004U);
+  } else {
+    ClearHasBit(_impl_._has_bits_[0], 0x00000004U);
+  }
+
+  _impl_.msg_ = reinterpret_cast<::messenger::MessageForUser*>(value);
+  // @@protoc_insertion_point(field_set_allocated:messenger.SendPostponedRequest.msg)
+}
+
+// string receiver = 2;
+inline bool SendPostponedRequest::has_receiver() const {
+  bool value = CheckHasBit(_impl_._has_bits_[0], 0x00000001U);
+  return value;
+}
+inline void SendPostponedRequest::clear_receiver() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.receiver_.ClearToEmpty();
+  ClearHasBit(_impl_._has_bits_[0],
+                  0x00000001U);
+}
+inline const ::std::string& SendPostponedRequest::receiver() const
+    ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  // @@protoc_insertion_point(field_get:messenger.SendPostponedRequest.receiver)
+  return _internal_receiver();
+}
+template <typename Arg_, typename... Args_>
+PROTOBUF_ALWAYS_INLINE void SendPostponedRequest::set_receiver(Arg_&& arg, Args_... args) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  SetHasBit(_impl_._has_bits_[0], 0x00000001U);
+  _impl_.receiver_.Set(static_cast<Arg_&&>(arg), args..., GetArena());
+  // @@protoc_insertion_point(field_set:messenger.SendPostponedRequest.receiver)
+}
+inline ::std::string* PROTOBUF_NONNULL SendPostponedRequest::mutable_receiver()
+    ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  SetHasBit(_impl_._has_bits_[0], 0x00000001U);
+  ::std::string* _s = _internal_mutable_receiver();
+  // @@protoc_insertion_point(field_mutable:messenger.SendPostponedRequest.receiver)
+  return _s;
+}
+inline const ::std::string& SendPostponedRequest::_internal_receiver() const {
+  ::google::protobuf::internal::TSanRead(&_impl_);
+  return _impl_.receiver_.Get();
+}
+inline void SendPostponedRequest::_internal_set_receiver(const ::std::string& value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.receiver_.Set(value, GetArena());
+}
+inline ::std::string* PROTOBUF_NONNULL SendPostponedRequest::_internal_mutable_receiver() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  return _impl_.receiver_.Mutable( GetArena());
+}
+inline ::std::string* PROTOBUF_NULLABLE SendPostponedRequest::release_receiver() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  // @@protoc_insertion_point(field_release:messenger.SendPostponedRequest.receiver)
+  if (!CheckHasBit(_impl_._has_bits_[0], 0x00000001U)) {
+    return nullptr;
+  }
+  ClearHasBit(_impl_._has_bits_[0], 0x00000001U);
+  auto* released = _impl_.receiver_.Release();
+  if (::google::protobuf::internal::DebugHardenForceCopyDefaultString()) {
+    _impl_.receiver_.Set("", GetArena());
+  }
+  return released;
+}
+inline void SendPostponedRequest::set_allocated_receiver(::std::string* PROTOBUF_NULLABLE value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  if (value != nullptr) {
+    SetHasBit(_impl_._has_bits_[0], 0x00000001U);
+  } else {
+    ClearHasBit(_impl_._has_bits_[0], 0x00000001U);
+  }
+  _impl_.receiver_.SetAllocated(value, GetArena());
+  if (::google::protobuf::internal::DebugHardenForceCopyDefaultString() && _impl_.receiver_.IsDefault()) {
+    _impl_.receiver_.Set("", GetArena());
+  }
+  // @@protoc_insertion_point(field_set_allocated:messenger.SendPostponedRequest.receiver)
+}
+
+// string pipe_path = 3;
+inline bool SendPostponedRequest::has_pipe_path() const {
+  bool value = CheckHasBit(_impl_._has_bits_[0], 0x00000002U);
+  return value;
+}
+inline void SendPostponedRequest::clear_pipe_path() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.pipe_path_.ClearToEmpty();
+  ClearHasBit(_impl_._has_bits_[0],
+                  0x00000002U);
+}
+inline const ::std::string& SendPostponedRequest::pipe_path() const
+    ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  // @@protoc_insertion_point(field_get:messenger.SendPostponedRequest.pipe_path)
+  return _internal_pipe_path();
+}
+template <typename Arg_, typename... Args_>
+PROTOBUF_ALWAYS_INLINE void SendPostponedRequest::set_pipe_path(Arg_&& arg, Args_... args) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  SetHasBit(_impl_._has_bits_[0], 0x00000002U);
+  _impl_.pipe_path_.Set(static_cast<Arg_&&>(arg), args..., GetArena());
+  // @@protoc_insertion_point(field_set:messenger.SendPostponedRequest.pipe_path)
+}
+inline ::std::string* PROTOBUF_NONNULL SendPostponedRequest::mutable_pipe_path()
+    ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  SetHasBit(_impl_._has_bits_[0], 0x00000002U);
+  ::std::string* _s = _internal_mutable_pipe_path();
+  // @@protoc_insertion_point(field_mutable:messenger.SendPostponedRequest.pipe_path)
+  return _s;
+}
+inline const ::std::string& SendPostponedRequest::_internal_pipe_path() const {
+  ::google::protobuf::internal::TSanRead(&_impl_);
+  return _impl_.pipe_path_.Get();
+}
+inline void SendPostponedRequest::_internal_set_pipe_path(const ::std::string& value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.pipe_path_.Set(value, GetArena());
+}
+inline ::std::string* PROTOBUF_NONNULL SendPostponedRequest::_internal_mutable_pipe_path() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  return _impl_.pipe_path_.Mutable( GetArena());
+}
+inline ::std::string* PROTOBUF_NULLABLE SendPostponedRequest::release_pipe_path() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  // @@protoc_insertion_point(field_release:messenger.SendPostponedRequest.pipe_path)
+  if (!CheckHasBit(_impl_._has_bits_[0], 0x00000002U)) {
+    return nullptr;
+  }
+  ClearHasBit(_impl_._has_bits_[0], 0x00000002U);
+  auto* released = _impl_.pipe_path_.Release();
+  if (::google::protobuf::internal::DebugHardenForceCopyDefaultString()) {
+    _impl_.pipe_path_.Set("", GetArena());
+  }
+  return released;
+}
+inline void SendPostponedRequest::set_allocated_pipe_path(::std::string* PROTOBUF_NULLABLE value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  if (value != nullptr) {
+    SetHasBit(_impl_._has_bits_[0], 0x00000002U);
+  } else {
+    ClearHasBit(_impl_._has_bits_[0], 0x00000002U);
+  }
+  _impl_.pipe_path_.SetAllocated(value, GetArena());
+  if (::google::protobuf::internal::DebugHardenForceCopyDefaultString() && _impl_.pipe_path_.IsDefault()) {
+    _impl_.pipe_path_.Set("", GetArena());
+  }
+  // @@protoc_insertion_point(field_set_allocated:messenger.SendPostponedRequest.pipe_path)
+}
+
+// -------------------------------------------------------------------
+
+// SendPostponedResponce
+
+// .messenger.SendPostponedResponce.StatusType status = 1;
+inline bool SendPostponedResponce::has_status() const {
+  bool value = CheckHasBit(_impl_._has_bits_[0], 0x00000002U);
+  return value;
+}
+inline void SendPostponedResponce::clear_status() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.status_ = 0;
+  ClearHasBit(_impl_._has_bits_[0],
+                  0x00000002U);
+}
+inline ::messenger::SendPostponedResponce_StatusType SendPostponedResponce::status() const {
+  // @@protoc_insertion_point(field_get:messenger.SendPostponedResponce.status)
+  return _internal_status();
+}
+inline void SendPostponedResponce::set_status(::messenger::SendPostponedResponce_StatusType value) {
+  _internal_set_status(value);
+  SetHasBit(_impl_._has_bits_[0], 0x00000002U);
+  // @@protoc_insertion_point(field_set:messenger.SendPostponedResponce.status)
+}
+inline ::messenger::SendPostponedResponce_StatusType SendPostponedResponce::_internal_status() const {
+  ::google::protobuf::internal::TSanRead(&_impl_);
+  return static_cast<::messenger::SendPostponedResponce_StatusType>(_impl_.status_);
+}
+inline void SendPostponedResponce::_internal_set_status(::messenger::SendPostponedResponce_StatusType value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.status_ = value;
+}
+
+// string verbose = 2;
+inline bool SendPostponedResponce::has_verbose() const {
+  bool value = CheckHasBit(_impl_._has_bits_[0], 0x00000001U);
+  return value;
+}
+inline void SendPostponedResponce::clear_verbose() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.verbose_.ClearToEmpty();
+  ClearHasBit(_impl_._has_bits_[0],
+                  0x00000001U);
+}
+inline const ::std::string& SendPostponedResponce::verbose() const
+    ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  // @@protoc_insertion_point(field_get:messenger.SendPostponedResponce.verbose)
+  return _internal_verbose();
+}
+template <typename Arg_, typename... Args_>
+PROTOBUF_ALWAYS_INLINE void SendPostponedResponce::set_verbose(Arg_&& arg, Args_... args) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  SetHasBit(_impl_._has_bits_[0], 0x00000001U);
+  _impl_.verbose_.Set(static_cast<Arg_&&>(arg), args..., GetArena());
+  // @@protoc_insertion_point(field_set:messenger.SendPostponedResponce.verbose)
+}
+inline ::std::string* PROTOBUF_NONNULL SendPostponedResponce::mutable_verbose()
+    ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  SetHasBit(_impl_._has_bits_[0], 0x00000001U);
+  ::std::string* _s = _internal_mutable_verbose();
+  // @@protoc_insertion_point(field_mutable:messenger.SendPostponedResponce.verbose)
+  return _s;
+}
+inline const ::std::string& SendPostponedResponce::_internal_verbose() const {
+  ::google::protobuf::internal::TSanRead(&_impl_);
+  return _impl_.verbose_.Get();
+}
+inline void SendPostponedResponce::_internal_set_verbose(const ::std::string& value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.verbose_.Set(value, GetArena());
+}
+inline ::std::string* PROTOBUF_NONNULL SendPostponedResponce::_internal_mutable_verbose() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  return _impl_.verbose_.Mutable( GetArena());
+}
+inline ::std::string* PROTOBUF_NULLABLE SendPostponedResponce::release_verbose() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  // @@protoc_insertion_point(field_release:messenger.SendPostponedResponce.verbose)
+  if (!CheckHasBit(_impl_._has_bits_[0], 0x00000001U)) {
+    return nullptr;
+  }
+  ClearHasBit(_impl_._has_bits_[0], 0x00000001U);
+  auto* released = _impl_.verbose_.Release();
+  if (::google::protobuf::internal::DebugHardenForceCopyDefaultString()) {
+    _impl_.verbose_.Set("", GetArena());
+  }
+  return released;
+}
+inline void SendPostponedResponce::set_allocated_verbose(::std::string* PROTOBUF_NULLABLE value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  if (value != nullptr) {
+    SetHasBit(_impl_._has_bits_[0], 0x00000001U);
+  } else {
+    ClearHasBit(_impl_._has_bits_[0], 0x00000001U);
+  }
+  _impl_.verbose_.SetAllocated(value, GetArena());
+  if (::google::protobuf::internal::DebugHardenForceCopyDefaultString() && _impl_.verbose_.IsDefault()) {
+    _impl_.verbose_.Set("", GetArena());
+  }
+  // @@protoc_insertion_point(field_set_allocated:messenger.SendPostponedResponce.verbose)
+}
+
 #ifdef __GNUC__
 #pragma GCC diagnostic pop
 #endif  // __GNUC__
@@ -2977,6 +3829,12 @@ struct is_proto_enum<::messenger::SendResponce_StatusType> : std::true_type {};
 template <>
 inline const EnumDescriptor* PROTOBUF_NONNULL GetEnumDescriptor<::messenger::SendResponce_StatusType>() {
   return ::messenger::SendResponce_StatusType_descriptor();
+}
+template <>
+struct is_proto_enum<::messenger::SendPostponedResponce_StatusType> : std::true_type {};
+template <>
+inline const EnumDescriptor* PROTOBUF_NONNULL GetEnumDescriptor<::messenger::SendPostponedResponce_StatusType>() {
+  return ::messenger::SendPostponedResponce_StatusType_descriptor();
 }
 
 }  // namespace protobuf

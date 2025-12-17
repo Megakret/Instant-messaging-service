@@ -1,4 +1,3 @@
-#include <thread>
 #include <unistd.h>
 
 #include <gtest/gtest.h>
@@ -7,17 +6,20 @@
 #include <handlers/handle.hpp>
 #include <main_handler_loop.hpp>
 #include <protos/main.pb.h>
+#include <thread.hpp>
 
 const std::string_view kUserPipe = "/tmp/";
+const std::chrono::seconds kTestTimeout(2);
+
 template <int msg_type, typename ProtoRequest>
-void SendToServer(const ProtoRequest &msg,
-                  const transport::PipeTransport &server) {
+void SendToServer(const ProtoRequest& msg,
+                  const transport::PipeTransport& server) {
   handlers::Metadata md{msg_type, static_cast<int64_t>(msg.ByteSizeLong())};
   auto err = handlers::BindMetadataAndSend(msg, md, server);
   EXPECT_EQ(err, handlers::BindMdAndSendErr::Success);
 }
 template <typename ProtoResponse>
-ProtoResponse GetFromPipe(const transport::PipeTransport &pipe) {
+ProtoResponse GetFromPipe(const transport::PipeTransport& pipe) {
   ProtoResponse response;
   auto stream = pipe.StartStream();
   EXPECT_TRUE(stream);
@@ -26,7 +28,7 @@ ProtoResponse GetFromPipe(const transport::PipeTransport &pipe) {
   EXPECT_TRUE(read_bytes);
   EXPECT_EQ(*read_bytes, buf.length());
   auto metadata =
-      reinterpret_cast<const handlers::ResponseMetadata *>(buf.c_str());
+      reinterpret_cast<const handlers::ResponseMetadata*>(buf.c_str());
   std::string msg_buf(metadata->length, '\0');
   auto read_bytes1 = stream->Receive(msg_buf);
   EXPECT_TRUE(read_bytes1);
@@ -35,7 +37,7 @@ ProtoResponse GetFromPipe(const transport::PipeTransport &pipe) {
   return response;
 }
 
-std::string ConnectUser(const std::string &user) {
+std::string ConnectUser(const std::string& user) {
   std::string pipe_path = "/tmp/" + user;
   transport::PipeErr err;
   transport::PipeTransport user_pipe(pipe_path,
@@ -59,7 +61,7 @@ std::string ConnectUser(const std::string &user) {
   }
 }
 
-void DisconnectUser(const std::string &user) {
+void DisconnectUser(const std::string& user) {
   std::string pipe_path = "/tmp/" + user;
   {
     transport::PipeErr err;
@@ -95,7 +97,8 @@ TEST(ConnectingTests, TwoUsers) {
 TEST(SendMessageTest, PingPong) {
   auto biba_path = ConnectUser("biba");
   auto boba_path = ConnectUser("boba");
-  std::thread receiver([&biba_path]() {
+  os::Thread receiver;
+  auto lambda = std::function<void()>([&biba_path]() {
     transport::PipeErr err;
     transport::PipeTransport biba_pipe(biba_path, transport::Read, err);
     transport::PipeTransport server_pipe(std::string(kAcceptingPipePath),
@@ -127,6 +130,7 @@ TEST(SendMessageTest, PingPong) {
       std::cout << "Biba received answer from server\n";
     }
   });
+  receiver.RunLambda(&lambda);
   transport::PipeErr err;
   transport::PipeTransport boba_pipe(boba_path, transport::Read, err);
   transport::PipeTransport server_pipe(std::string(kAcceptingPipePath),
@@ -157,13 +161,155 @@ TEST(SendMessageTest, PingPong) {
     EXPECT_EQ(msg.message(), "pong");
     std::cout << "Boba got pong\n";
   }
-  receiver.join();
+  receiver.Join();
   DisconnectUser("biba");
   DisconnectUser("boba");
 }
-int main(int argc, char **argv) {
+TEST(DelayedMessage, Simple) {
+  using namespace std::chrono_literals;
+  const std::string_view kMessage = "Hello";
+  auto biba_path = ConnectUser("biba");
+  auto boba_path = ConnectUser("boba");
+  auto prev_time = std::chrono::system_clock::now();
+  const int32_t time_to_send = std::chrono::duration_cast<std::chrono::seconds>(
+                                   (prev_time + 2s).time_since_epoch())
+                                   .count();
+  const std::string kBibaAnsPath = std::string(kUserPipe) + "biba";
+  const std::string kBobaAnsPath = std::string(kUserPipe) + "boba";
+  transport::PipeErr err;
+  transport::PipeTransport server_pipe(std::string(kAcceptingPipePath),
+                                       transport::Write, err);
+  {
+    transport::PipeTransport answer_pipe(
+        kBibaAnsPath, transport::Read | transport::Create, err);
+    messenger::SendPostponedRequest req;
+    req.set_receiver("boba");
+    req.set_pipe_path(kBibaAnsPath);
+    auto msg = req.mutable_msg();
+    msg->set_sender_login("biba");
+    msg->set_message(kMessage);
+    msg->set_time(time_to_send);
+    SendToServer<kPostponeMsgID>(req, server_pipe);
+    std::cout << "Sent the message\n";
+    {
+      auto msg = GetFromPipe<messenger::SendPostponedResponce>(answer_pipe);
+      ASSERT_EQ(msg.status(), messenger::SendPostponedResponce::OK);
+      std::cout << "Got positive answer from server\n";
+    }
+  }
+  {
+
+    transport::PipeTransport boba_pipe(boba_path, transport::Read, err);
+
+    auto msg = GetFromPipe<messenger::MessageForUser>(boba_pipe);
+    std::cout << "Boba got message\n";
+    EXPECT_EQ(msg.message(), kMessage);
+    EXPECT_EQ(msg.sender_login(), "biba");
+    EXPECT_EQ(msg.time(), time_to_send);
+    auto now = std::chrono::system_clock::now();
+    EXPECT_GE(now - prev_time, 1s);
+  }
+  DisconnectUser("biba");
+  DisconnectUser("boba");
+}
+TEST(DelayedMessage, NotConnected) {
+  using namespace std::chrono_literals;
+  const std::string_view kMessage = "Hello";
+  auto biba_path = ConnectUser("biba");
+  auto boba_path = ConnectUser("boba");
+  auto prev_time = std::chrono::system_clock::now();
+  DisconnectUser("boba");
+  const int32_t time_to_send = std::chrono::duration_cast<std::chrono::seconds>(
+                                   (prev_time + 2s).time_since_epoch())
+                                   .count();
+  const std::string kBibaAnsPath = std::string(kUserPipe) + "biba";
+  const std::string kBobaAnsPath = std::string(kUserPipe) + "boba";
+  transport::PipeErr err;
+  transport::PipeTransport server_pipe(std::string(kAcceptingPipePath),
+                                       transport::Write, err);
+  {
+    transport::PipeTransport answer_pipe(
+        kBibaAnsPath, transport::Read | transport::Create, err);
+    messenger::SendPostponedRequest req;
+    req.set_receiver("boba");
+    req.set_pipe_path(kBibaAnsPath);
+    auto msg = req.mutable_msg();
+    msg->set_sender_login("biba");
+    msg->set_message(kMessage);
+    msg->set_time(time_to_send);
+    SendToServer<kPostponeMsgID>(req, server_pipe);
+    std::cout << "Sent the message\n";
+    {
+      auto msg = GetFromPipe<messenger::SendPostponedResponce>(answer_pipe);
+      ASSERT_EQ(msg.status(), messenger::SendPostponedResponce::OK);
+      std::cout << "Got positive answer from server\n";
+    }
+  }
+  sleep(2);
+  boba_path = ConnectUser("boba");
+  {
+
+    transport::PipeTransport boba_pipe(boba_path, transport::Read, err);
+
+    auto msg = GetFromPipe<messenger::MessageForUser>(boba_pipe);
+    std::cout << "Boba got message\n";
+    EXPECT_EQ(msg.message(), kMessage);
+    EXPECT_EQ(msg.sender_login(), "biba");
+    EXPECT_EQ(msg.time(), time_to_send);
+    auto now = std::chrono::system_clock::now();
+    EXPECT_GE(now - prev_time, 1s);
+  }
+  DisconnectUser("biba");
+  DisconnectUser("boba");
+}
+TEST(DelayedTest, SelfSend) {
+  using namespace std::chrono_literals;
+  const std::string_view kMessage = "Hello";
+  auto biba_path = ConnectUser("biba");
+  auto prev_time = std::chrono::system_clock::now();
+  const int32_t time_to_send = std::chrono::duration_cast<std::chrono::seconds>(
+                                   (prev_time + 2s).time_since_epoch())
+                                   .count();
+  const std::string kBibaAnsPath = std::string(kUserPipe) + "biba";
+  transport::PipeErr err;
+  transport::PipeTransport server_pipe(std::string(kAcceptingPipePath),
+                                       transport::Write, err);
+  {
+    transport::PipeTransport answer_pipe(
+        kBibaAnsPath, transport::Read | transport::Create, err);
+    messenger::SendPostponedRequest req;
+    req.set_receiver("biba");
+    req.set_pipe_path(kBibaAnsPath);
+    auto msg = req.mutable_msg();
+    msg->set_sender_login("biba");
+    msg->set_message(kMessage);
+    msg->set_time(time_to_send);
+    SendToServer<kPostponeMsgID>(req, server_pipe);
+    std::cout << "Sent the message\n";
+    {
+      auto msg = GetFromPipe<messenger::SendPostponedResponce>(answer_pipe);
+      ASSERT_EQ(msg.status(), messenger::SendPostponedResponce::OK);
+      std::cout << "Got positive answer from server\n";
+    }
+  }
+  {
+    transport::PipeTransport biba_pipe(biba_path, transport::Read, err);
+    auto msg = GetFromPipe<messenger::MessageForUser>(biba_pipe);
+    std::cout << "Boba got message\n";
+    EXPECT_EQ(msg.message(), kMessage);
+    EXPECT_EQ(msg.sender_login(), "biba");
+    EXPECT_EQ(msg.time(), time_to_send);
+    auto now = std::chrono::system_clock::now();
+    EXPECT_GE(now - prev_time, 1s);
+  }
+  DisconnectUser("biba");
+}
+int main(int argc, char** argv) {
   testing::InitGoogleTest(&argc, argv);
-  std::thread t1(main_handler_loop);
-  t1.detach();
+  os::Thread t1;
+  auto lambda =
+      std::function<void()>([]() { main_handler_loop(kTestTimeout); });
+  t1.RunLambda(&lambda);
+  t1.Detach();
   return RUN_ALL_TESTS();
 }
