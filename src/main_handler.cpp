@@ -11,8 +11,8 @@
 void main_handler_loop(std::chrono::seconds postpone_timeout) {
   UserStorage users;
   std::mutex users_mu;
-  handlers::MessegingService messeging_service(users, users_mu);
   PostponeService postponer(users, users_mu);
+  handlers::MessegingService messeging_service(users, users_mu, postponer);
   os::Thread t;
   auto postpone_runner =
       std::function<void()>([&postponer, postpone_timeout]() {

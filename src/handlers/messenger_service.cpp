@@ -8,14 +8,15 @@
 #include <config.hpp>
 
 namespace handlers {
-MessegingService::MessegingService(UserStorage& users, std::mutex& users_mu)
-    : users_(users), users_mu_(users_mu) {}
+MessegingService::MessegingService(UserStorage& users, std::mutex& users_mu,
+                                   PostponeService& postponer)
+    : users_(users), users_mu_(users_mu), postponer_(postponer) {}
 messenger::ConnectResponce
 MessegingService::CreateConnection(const messenger::ConnectMessage& msg) {
   messenger::ConnectResponce responce;
   transport::PipeErr err;
   std::string recv_pipe_path = std::string(kReceiverDir) + "/" + msg.login();
-	std::lock_guard<std::mutex> lk(users_mu_);
+  std::lock_guard<std::mutex> lk(users_mu_);
   auto it = users_.find(msg.login());
   if (it == users_.end()) {
     transport::PipeTransport transport(
@@ -38,7 +39,7 @@ MessegingService::CreateConnection(const messenger::ConnectMessage& msg) {
 messenger::DisconnectResponce
 MessegingService::CloseConnection(const messenger::DisconnectMessage& msg) {
   messenger::DisconnectResponce responce;
-	std::lock_guard<std::mutex> lk(users_mu_);
+  std::lock_guard<std::mutex> lk(users_mu_);
   auto it = users_.find(msg.login());
   if (it == users_.end()) {
     responce.set_status(messenger::DisconnectResponce::ERROR);
@@ -56,7 +57,8 @@ MessegingService::CloseConnection(const messenger::DisconnectMessage& msg) {
 messenger::SendResponce
 MessegingService::SendMessage(const messenger::SendMessage& msg) {
   messenger::SendResponce responce;
-	std::lock_guard<std::mutex> lk(users_mu_);
+  responce.set_status(messenger::SendResponce::OK);
+  std::lock_guard<std::mutex> lk(users_mu_);
   auto it = users_.find(msg.receiver_login());
   if (it == users_.end()) {
     // TODO: normal errors
@@ -77,9 +79,17 @@ MessegingService::SendMessage(const messenger::SendMessage& msg) {
     responce.set_status(messenger::SendResponce::OK);
     return responce;
   }
+  auto err = postponer_.DelaySend(msg.sender_login(), msg.sender_login(),
+                                  msg.message());
   // Error for now
-  responce.set_status(messenger::SendResponce::ERROR);
-  responce.set_verbose("receiver isnt connected");
+  if (err != PostponeErr::Success) {
+    std::cout << "Failed to postpone message to disconnected user: "
+              << static_cast<int>(err) << '\n';
+    responce.set_status(messenger::SendResponce::ERROR);
+    responce.set_verbose(
+        "receiver is disconnected. Failed to postpone message");
+    return responce;
+  }
   return responce;
 }
 } // namespace handlers
