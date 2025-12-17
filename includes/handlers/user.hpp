@@ -26,8 +26,6 @@ private:
 class User {
 public:
   User(const std::string& login, const transport::PipeTransport& transport);
-  User(const User& user) = delete;
-  User(User&&) = default;
   void OnConnect();
   void OnDisconnect();
   bool IsConnected();

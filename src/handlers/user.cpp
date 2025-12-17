@@ -13,7 +13,7 @@ SendToStatus UserStream::SendTo(
   messenger::MessageForUser msg;
   msg.set_sender_login(std::move(sender_login));
   msg.set_message(std::move(message));
-  msg.set_time(std::chrono::duration_cast<std::chrono::milliseconds>(
+  msg.set_time(std::chrono::duration_cast<std::chrono::seconds>(
                    sending_time.time_since_epoch())
                    .count());
   ResponseMetadata md{static_cast<int32_t>(msg.ByteSizeLong())};

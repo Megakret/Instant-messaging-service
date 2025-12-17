@@ -9,15 +9,16 @@
 namespace handlers {
 class MessegingService {
 public:
-  MessegingService(UserStorage &users);
+  MessegingService(UserStorage& users, std::mutex& users_mu);
   messenger::ConnectResponce
-  CreateConnection(const messenger::ConnectMessage &msg);
+  CreateConnection(const messenger::ConnectMessage& msg);
   messenger::DisconnectResponce
-  CloseConnection(const messenger::DisconnectMessage &msg);
-  messenger::SendResponce SendMessage(const messenger::SendMessage &msg);
+  CloseConnection(const messenger::DisconnectMessage& msg);
+  messenger::SendResponce SendMessage(const messenger::SendMessage& msg);
 
 private:
   // Here i will store users
-  UserStorage &users_;
+  UserStorage& users_;
+  std::mutex& users_mu_;
 };
 } // namespace handlers

@@ -8,12 +8,14 @@
 #include <config.hpp>
 
 namespace handlers {
-MessegingService::MessegingService(UserStorage &users) : users_(users) {}
+MessegingService::MessegingService(UserStorage& users, std::mutex& users_mu)
+    : users_(users), users_mu_(users_mu) {}
 messenger::ConnectResponce
-MessegingService::CreateConnection(const messenger::ConnectMessage &msg) {
+MessegingService::CreateConnection(const messenger::ConnectMessage& msg) {
   messenger::ConnectResponce responce;
   transport::PipeErr err;
   std::string recv_pipe_path = std::string(kReceiverDir) + "/" + msg.login();
+	std::lock_guard<std::mutex> lk(users_mu_);
   auto it = users_.find(msg.login());
   if (it == users_.end()) {
     transport::PipeTransport transport(
@@ -34,8 +36,9 @@ MessegingService::CreateConnection(const messenger::ConnectMessage &msg) {
 }
 
 messenger::DisconnectResponce
-MessegingService::CloseConnection(const messenger::DisconnectMessage &msg) {
+MessegingService::CloseConnection(const messenger::DisconnectMessage& msg) {
   messenger::DisconnectResponce responce;
+	std::lock_guard<std::mutex> lk(users_mu_);
   auto it = users_.find(msg.login());
   if (it == users_.end()) {
     responce.set_status(messenger::DisconnectResponce::ERROR);
@@ -51,8 +54,9 @@ MessegingService::CloseConnection(const messenger::DisconnectMessage &msg) {
   return responce;
 }
 messenger::SendResponce
-MessegingService::SendMessage(const messenger::SendMessage &msg) {
+MessegingService::SendMessage(const messenger::SendMessage& msg) {
   messenger::SendResponce responce;
+	std::lock_guard<std::mutex> lk(users_mu_);
   auto it = users_.find(msg.receiver_login());
   if (it == users_.end()) {
     // TODO: normal errors
@@ -60,7 +64,7 @@ MessegingService::SendMessage(const messenger::SendMessage &msg) {
     responce.set_verbose("receiver doesnt exist");
     return responce;
   }
-  User &receiver = it->second;
+  User& receiver = it->second;
   if (receiver.IsConnected()) {
     const auto now = std::chrono::system_clock::now();
     auto err = receiver.SendTo(msg.sender_login(), msg.message(), now);

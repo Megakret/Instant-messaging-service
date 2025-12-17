@@ -1,3 +1,5 @@
 #pragma once
 
-void main_handler_loop();
+#include<chrono>
+
+void main_handler_loop(std::chrono::seconds postpone_timeout);
