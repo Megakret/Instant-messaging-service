@@ -18,6 +18,7 @@ MessegingService::CreateConnection(const messenger::ConnectMessage& msg) {
   std::string recv_pipe_path = std::string(kReceiverDir) + "/" + msg.login();
   std::lock_guard<std::mutex> lk(users_mu_);
   auto it = users_.find(msg.login());
+	std::cout << msg.login() << '\n';
   if (it == users_.end()) {
     transport::PipeTransport transport(
         recv_pipe_path, transport::Create | transport::Write, err);

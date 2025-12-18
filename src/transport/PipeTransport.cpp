@@ -9,8 +9,8 @@
 
 namespace transport {
 constexpr int kFullPermission = 0600;
-PipeTransport::PipeTransport(const std::string &name, PipeFlags flags,
-                             PipeErr &err_ref)
+PipeTransport::PipeTransport(const std::string& name, PipeFlags flags,
+                             PipeErr& err_ref)
     : filename_(name), flags_(flags) {
   err_ref = PipeErr::Success;
   if (Write & flags && Read & flags) {
@@ -23,6 +23,19 @@ PipeTransport::PipeTransport(const std::string &name, PipeFlags flags,
         return;
       }
       err_ref = PipeErr::CreateFailed;
+      std::cout << "Failed to create pipe: " << strerror(errno) << '\n';
+      return;
+    }
+  }
+}
+PipeTransport::PipeTransport(const std::string& name, PipeFlags flags)
+    : filename_(name), flags_(flags) {
+  if (Create & flags) {
+    int status = mkfifo(name.c_str(), kFullPermission);
+    if (status == -1) {
+      if (errno == EEXIST) {
+        return;
+      }
       std::cout << "Failed to create pipe: " << strerror(errno) << '\n';
       return;
     }
@@ -52,9 +65,10 @@ PipeTransport::Receive(std::span<char> buffer) const {
     return std::unexpected(stream.error());
   }
 }
+std::string PipeTransport::GetPath() const { return filename_; }
 
 PipeStream::PipeStream(int pipe_fd) : pipe_fd_(pipe_fd) {}
-PipeStream::PipeStream(PipeStream &&stream) : pipe_fd_(stream.pipe_fd_) {
+PipeStream::PipeStream(PipeStream&& stream) : pipe_fd_(stream.pipe_fd_) {
   stream.pipe_fd_ = -1;
 }
 std::expected<int, PipeErr>
@@ -75,7 +89,7 @@ std::expected<int, PipeErr> PipeStream::Receive(std::span<char> buffer) const {
   }
   return read_bytes;
 }
-PipeStream &PipeStream::operator=(PipeStream &&other) {
+PipeStream& PipeStream::operator=(PipeStream&& other) {
   PipeStream moved(std::move(other));
   this->pipe_fd_ = moved.pipe_fd_;
   moved.pipe_fd_ = -1;
@@ -95,6 +109,7 @@ std::expected<PipeStream, PipeErr> PipeTransport::StartStream() const {
     pipe_fd = open(filename_.c_str(), O_WRONLY);
   }
   if (pipe_fd == -1) {
+		std::cerr << strerror(errno) << '\n';
     return std::unexpected(PipeErr::OpenFailed);
   }
   return PipeStream(pipe_fd);

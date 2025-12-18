@@ -51,6 +51,8 @@ void PostponeService::StartSendSchedule(std::chrono::seconds timeout) {
       auto list_it = msg_list.begin();
       for (auto it = msg_list.begin(); it != msg_list.end(); ++it) {
         const auto& msg = *it;
+				std::cout << now << '\n';
+				std::cout << msg.time_to_send << '\n';
         if (now <= msg.time_to_send) {
           continue;
         }

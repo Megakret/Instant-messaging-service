@@ -36,10 +36,12 @@ private:
 class PipeTransport {
 public:
   PipeTransport(const std::string &name, PipeFlags flags, PipeErr &err_ref);
+  PipeTransport(const std::string &name, PipeFlags flags);
 	std::expected<int, PipeErr> Send(std::span<const char> buffer) const;
   std::expected<int, PipeErr>
   Receive(std::span<char> buffer) const; // Returns bytes read
   std::expected<PipeStream, PipeErr> StartStream() const;
+	std::string GetPath() const;
   ~PipeTransport();
 
 private:

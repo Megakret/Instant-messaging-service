@@ -61,6 +61,7 @@ void main_handler_loop(std::chrono::seconds postpone_timeout) {
           *stream, *md, [&messeging_service](auto req) -> auto {
             return messeging_service.CreateConnection(req);
           });
+			std::cout << "Server has answered connection request\n";
       break;
     case kDisconnectMsgID:
       std::cout << "Server is requested to disconnect\n";
@@ -70,13 +71,14 @@ void main_handler_loop(std::chrono::seconds postpone_timeout) {
             return messeging_service.CloseConnection(req);
           });
       break;
+			std::cout << "Server has answered disconnection request\n";
     case kSendMsgID:
       std::cout << "Server is requested to send message\n";
       handlers::HandleRequest<messenger::SendResponce, messenger::SendMessage>(
           *stream, *md, [&messeging_service](auto req) -> auto {
             return messeging_service.SendMessage(req);
           });
-
+			std::cout << "Server has answered send message request\n";
       break;
 
     case kPostponeMsgID:
@@ -86,7 +88,7 @@ void main_handler_loop(std::chrono::seconds postpone_timeout) {
           *stream, *md, [&postpone_handler](auto req) -> auto {
             return postpone_handler(req);
           });
-
+			std::cout << "Server has answered postpone message request\n";
       break;
     }
   }

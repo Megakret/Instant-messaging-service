@@ -1,5 +1,6 @@
 add_subdirectory(transport)
 add_subdirectory(handlers)
+add_subdirectory(client)
 
 add_library(thread_lib threads_unix.cpp)
 target_include_directories(thread_lib PUBLIC ${INCLUDES})
@@ -17,3 +18,6 @@ target_link_libraries(main_handler_test PUBLIC main_handler_lib GTest::gtest_mai
 foreach(executable main_handler_test)
 	target_include_directories(${executable} PUBLIC ${INCLUDES})
 endforeach()
+
+add_executable(server server.cpp)
+target_link_libraries(server main_handler_lib)
