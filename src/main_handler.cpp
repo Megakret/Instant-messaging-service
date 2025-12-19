@@ -4,9 +4,9 @@
 #include <handlers/handle.hpp>
 #include <handlers/messenger_service.hpp>
 #include <handlers/postpone_handlers.hpp>
+#include <os/thread.hpp>
 #include <postpone_service.hpp>
 #include <protos/main.pb.h>
-#include <os/thread.hpp>
 
 void main_handler_loop(std::chrono::seconds postpone_timeout) {
   UserStorage users;
@@ -61,7 +61,7 @@ void main_handler_loop(std::chrono::seconds postpone_timeout) {
           *stream, *md, [&messeging_service](auto req) -> auto {
             return messeging_service.CreateConnection(req);
           });
-			std::cout << "Server has answered connection request\n";
+      std::cout << "Server has answered connection request\n";
       break;
     case kDisconnectMsgID:
       std::cout << "Server is requested to disconnect\n";
@@ -70,7 +70,7 @@ void main_handler_loop(std::chrono::seconds postpone_timeout) {
           *stream, *md, [&messeging_service](auto req) -> auto {
             return messeging_service.CloseConnection(req);
           });
-			std::cout << "Server has answered disconnection request\n";
+      std::cout << "Server has answered disconnection request\n";
       break;
     case kSendMsgID:
       std::cout << "Server is requested to send message\n";
@@ -78,7 +78,7 @@ void main_handler_loop(std::chrono::seconds postpone_timeout) {
           *stream, *md, [&messeging_service](auto req) -> auto {
             return messeging_service.SendMessage(req);
           });
-			std::cout << "Server has answered send message request\n";
+      std::cout << "Server has answered send message request\n";
       break;
 
     case kPostponeMsgID:
@@ -88,7 +88,7 @@ void main_handler_loop(std::chrono::seconds postpone_timeout) {
           *stream, *md, [&postpone_handler](auto req) -> auto {
             return postpone_handler(req);
           });
-			std::cout << "Server has answered postpone message request\n";
+      std::cout << "Server has answered postpone message request\n";
       break;
     }
   }

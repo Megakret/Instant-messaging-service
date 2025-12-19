@@ -442,7 +442,7 @@ int main() {
     std::cerr << "Error when establishing signal handler\n";
     return -1;
   }
-  int fd = open(kLogFilename.data(), O_WRONLY | O_CREAT);
+  int fd = open(kLogFilename.data(), O_WRONLY | O_CREAT, 0600);
   if (fd == -1) {
     std::cerr << "Failed to open log file: " << strerror(errno) << '\n';
     return -1;

@@ -17,7 +17,7 @@ MessegingService::CreateConnection(const messenger::ConnectMessage& msg) {
   std::string recv_pipe_path = std::string(kReceiverDir) + "/" + msg.login();
   std::lock_guard<os::Mutex> lk(users_mu_);
   auto it = users_.find(msg.login());
-	std::cout << msg.login() << '\n';
+	std::cout << "Connecting: " << msg.login() << '\n';
   if (it == users_.end()) {
     transport::PipeTransport transport(
         recv_pipe_path, transport::Create | transport::Write, err);
@@ -41,6 +41,7 @@ MessegingService::CloseConnection(const messenger::DisconnectMessage& msg) {
   messenger::DisconnectResponce responce;
   std::lock_guard<os::Mutex> lk(users_mu_);
   auto it = users_.find(msg.login());
+	std::cout << "Disconnecting: " << msg.login() << '\n';
   if (it == users_.end()) {
     responce.set_status(messenger::DisconnectResponce::ERROR);
     responce.set_verbose("user doesnt exits");
@@ -61,7 +62,6 @@ MessegingService::SendMessage(const messenger::SendMessage& msg) {
   std::lock_guard<os::Mutex> lk(users_mu_);
   auto it = users_.find(msg.receiver_login());
   if (it == users_.end()) {
-    // TODO: normal errors
     responce.set_status(messenger::SendResponce::ERROR);
     responce.set_verbose("receiver doesnt exist");
     return responce;
@@ -81,7 +81,6 @@ MessegingService::SendMessage(const messenger::SendMessage& msg) {
   }
   auto err = postponer_.DelaySend(msg.sender_login(), msg.sender_login(),
                                   msg.message());
-  // Error for now
   if (err != PostponeErr::Success) {
     std::cout << "Failed to postpone message to disconnected user: "
               << static_cast<int>(err) << '\n';
