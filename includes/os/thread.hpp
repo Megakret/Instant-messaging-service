@@ -1,6 +1,7 @@
 #pragma once
 
 #include <functional>
+
 namespace os {
 using ThreadFunc = typeof(void *(void *)) *;
 // Accepts void*(void*)

@@ -1,14 +1,13 @@
 #include <handlers/messenger_service.hpp>
 
 #include <chrono>
-#include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 
 #include <config.hpp>
 
 namespace handlers {
-MessegingService::MessegingService(UserStorage& users, std::mutex& users_mu,
+MessegingService::MessegingService(UserStorage& users, os::Mutex& users_mu,
                                    PostponeService& postponer)
     : users_(users), users_mu_(users_mu), postponer_(postponer) {}
 messenger::ConnectResponce
@@ -16,7 +15,7 @@ MessegingService::CreateConnection(const messenger::ConnectMessage& msg) {
   messenger::ConnectResponce responce;
   transport::PipeErr err;
   std::string recv_pipe_path = std::string(kReceiverDir) + "/" + msg.login();
-  std::lock_guard<std::mutex> lk(users_mu_);
+  std::lock_guard<os::Mutex> lk(users_mu_);
   auto it = users_.find(msg.login());
 	std::cout << msg.login() << '\n';
   if (it == users_.end()) {
@@ -40,7 +39,7 @@ MessegingService::CreateConnection(const messenger::ConnectMessage& msg) {
 messenger::DisconnectResponce
 MessegingService::CloseConnection(const messenger::DisconnectMessage& msg) {
   messenger::DisconnectResponce responce;
-  std::lock_guard<std::mutex> lk(users_mu_);
+  std::lock_guard<os::Mutex> lk(users_mu_);
   auto it = users_.find(msg.login());
   if (it == users_.end()) {
     responce.set_status(messenger::DisconnectResponce::ERROR);
@@ -59,7 +58,7 @@ messenger::SendResponce
 MessegingService::SendMessage(const messenger::SendMessage& msg) {
   messenger::SendResponce responce;
   responce.set_status(messenger::SendResponce::OK);
-  std::lock_guard<std::mutex> lk(users_mu_);
+  std::lock_guard<os::Mutex> lk(users_mu_);
   auto it = users_.find(msg.receiver_login());
   if (it == users_.end()) {
     // TODO: normal errors

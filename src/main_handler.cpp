@@ -6,11 +6,11 @@
 #include <handlers/postpone_handlers.hpp>
 #include <postpone_service.hpp>
 #include <protos/main.pb.h>
-#include <thread.hpp>
+#include <os/thread.hpp>
 
 void main_handler_loop(std::chrono::seconds postpone_timeout) {
   UserStorage users;
-  std::mutex users_mu;
+  os::Mutex users_mu;
   PostponeService postponer(users, users_mu);
   handlers::MessegingService messeging_service(users, users_mu, postponer);
   os::Thread t;

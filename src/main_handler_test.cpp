@@ -6,7 +6,7 @@
 #include <handlers/handle.hpp>
 #include <main_handler_loop.hpp>
 #include <protos/main.pb.h>
-#include <thread.hpp>
+#include <os/thread.hpp>
 
 const std::string_view kUserPipe = "/tmp/";
 const std::chrono::seconds kTestTimeout(2);
