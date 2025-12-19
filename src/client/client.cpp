@@ -1,19 +1,22 @@
 #include <chrono>
 #include <functional>
 #include <memory>
-#include <mutex>
 #include <ncurses.h>
 #undef OK
+#include <fcntl.h>
 #include <signal.h>
 #include <sstream>
 #include <string>
-#include <thread>
+#include <unistd.h>
 
 #include <config.hpp>
 #include <handlers/handle.hpp>
+#include <os/mutex.hpp>
+#include <os/thread.hpp>
 #include <protos/main.pb.h>
 
 const std::string_view kClientPipeDir = "/tmp/clients/";
+const std::string_view kLogFilename = "client.log";
 const std::size_t kBufferSize = 1024;
 using TimePoint = std::chrono::time_point<std::chrono::system_clock>;
 const auto kCurrentZone = std::chrono::current_zone();
@@ -100,7 +103,7 @@ struct Message {
 
 class User {
 private:
-  std::mutex user_mu_;
+  os::Mutex user_mu_;
   std::string login_;
   transport::PipeTransport resp_pipe_;
   transport::PipeTransport server_pipe_;
@@ -169,7 +172,6 @@ public:
   }
 
   void SendToUser(const std::string& receiver, const std::string& message) {
-    std::lock_guard<std::mutex> lock(user_mu_);
     // In real implementation, send over network
     messenger::SendMessage req;
     req.set_sender_login(login_);
@@ -194,7 +196,7 @@ public:
 
   void SendDelayedToUser(const std::string& receiver,
                          const std::string& message, TimePoint time) {
-    std::lock_guard<decltype(user_mu_)> lock(user_mu_);
+    std::lock_guard<os::Mutex> lock(user_mu_);
     messenger::SendPostponedRequest req;
     req.set_pipe_path(resp_pipe_.GetPath());
     auto msg = req.mutable_msg();
@@ -253,14 +255,14 @@ private:
   WINDOW* history_win_ = nullptr;
   WINDOW* input_win_ = nullptr;
   std::unique_ptr<User> user_ = nullptr;
-  std::mutex ui_mutex_;
+  os::Mutex ui_mutex_;
   bool is_active_ = true;
   std::string time_to_string(TimePoint tp) {
     return std::format("{:%F %H-%M}", tp);
   }
 
   void print_message_to_history(const Message& msg) {
-    std::lock_guard<decltype(ui_mutex_)> lock(ui_mutex_);
+    std::lock_guard<os::Mutex> lock(ui_mutex_);
     std::string formatted = "@" + msg.sender + " [" +
                             time_to_string(msg.timestamp) + "] " + msg.content;
     wprintw(history_win_, "%s\n", formatted.c_str());
@@ -292,20 +294,23 @@ private:
       this->print_message_to_history(msg);
     });
     // Start receiver thread
-    std::thread receiver_thread([this]() { this->user_->RunReceiverLoop(); });
-    receiver_thread.detach();
+    os::Thread receiver_thread;
+    auto recv_lambda =
+        std::function<void()>([this]() { this->user_->RunReceiverLoop(); });
+    receiver_thread.RunLambda(&recv_lambda);
+    receiver_thread.Detach();
     while (is_active_) {
-			ui_mutex_.lock();
+      ui_mutex_.lock();
       mvwprintw(
           input_win_, 1, 2,
           "Select the message you want to send (1: instant, 2: delayed): ");
       wrefresh(input_win_);
-			ui_mutex_.unlock();
+      ui_mutex_.unlock();
 
       std::string choice = get_input_line(input_win_);
-			ui_mutex_.lock();
+      ui_mutex_.lock();
       clear_input_window();
-			ui_mutex_.unlock();
+      ui_mutex_.unlock();
       // Instant message
       if (choice == "1") {
         if (!is_active_) {
@@ -371,7 +376,7 @@ private:
         istream >> std::chrono::parse("%F %R", time_to_send);
         // TODO: failed to parse
         if (istream.fail()) {
-          std::lock_guard<std::mutex> lk(ui_mutex_);
+          std::lock_guard<os::Mutex> lk(ui_mutex_);
           mvwprintw(input_win_, 1, 2,
                     "Invalid time format. Press the key to continue...");
           wrefresh(input_win_);
@@ -435,6 +440,16 @@ int main() {
   int status = sigaction(SIGINT, &sigact, NULL);
   if (status == -1) {
     std::cerr << "Error when establishing signal handler\n";
+    return -1;
+  }
+  int fd = open(kLogFilename.data(), O_WRONLY | O_CREAT);
+  if (fd == -1) {
+    std::cerr << "Failed to open log file: " << strerror(errno) << '\n';
+    return -1;
+  }
+  int res = dup2(fd, STDERR_FILENO);
+  if (res == -1) {
+    std::cerr << "Failed to dup2: " << strerror(errno) << '\n';
     return -1;
   }
   kChatApp = std::make_unique<ChatApp>();
