@@ -70,8 +70,8 @@ void main_handler_loop(std::chrono::seconds postpone_timeout) {
           *stream, *md, [&messeging_service](auto req) -> auto {
             return messeging_service.CloseConnection(req);
           });
-      break;
 			std::cout << "Server has answered disconnection request\n";
+      break;
     case kSendMsgID:
       std::cout << "Server is requested to send message\n";
       handlers::HandleRequest<messenger::SendResponce, messenger::SendMessage>(

@@ -4,6 +4,7 @@
 #include <mutex>
 #include <ncurses.h>
 #undef OK
+#include <signal.h>
 #include <sstream>
 #include <string>
 #include <thread>
@@ -13,6 +14,7 @@
 #include <protos/main.pb.h>
 
 const std::string_view kClientPipeDir = "/tmp/clients/";
+const std::size_t kBufferSize = 1024;
 using TimePoint = std::chrono::time_point<std::chrono::system_clock>;
 const auto kCurrentZone = std::chrono::current_zone();
 enum class SendToServerStatus {
@@ -133,7 +135,6 @@ public:
         return;
       }
       transport::PipeErr err;
-      std::cerr << msg->reading_pipe_path() << '\n';
       recv_pipe_ = std::make_unique<transport::PipeTransport>(
           msg->reading_pipe_path(), transport::Read, err);
       if (err != transport::PipeErr::Success) {
@@ -149,9 +150,9 @@ public:
       req.set_login(login_);
       req.set_pipe_path(resp_pipe_.GetPath());
       auto status = SendMessage<messenger::DisconnectMessage>(
-          req, kConnectionMsgID, server_pipe_);
+          req, kDisconnectMsgID, server_pipe_);
       if (status != SendToServerStatus::Success) {
-        std::cerr << "Failed to connect\n";
+        std::cerr << "Failed to disconnect\n";
         return;
       }
     }
@@ -192,10 +193,8 @@ public:
   }
 
   void SendDelayedToUser(const std::string& receiver,
-                         const std::string& message,
-                         std::chrono::system_clock::time_point time) {
+                         const std::string& message, TimePoint time) {
     std::lock_guard<decltype(user_mu_)> lock(user_mu_);
-    // In real implementation, schedule for later
     messenger::SendPostponedRequest req;
     req.set_pipe_path(resp_pipe_.GetPath());
     auto msg = req.mutable_msg();
@@ -230,7 +229,6 @@ public:
       }
       while (true) {
         auto msg(GetFromStream<messenger::MessageForUser>(*stream));
-        std::cerr << "Got message\n";
         if (!msg) {
           auto err = msg.error();
           if (err == GetFromPipeErr::SystemError) {
@@ -244,8 +242,7 @@ public:
         }
         callback_(Message{std::move(msg->sender_login()),
                           std::move(msg->message()),
-                          std::chrono::system_clock::time_point(
-                              std::chrono::seconds(msg->time()))});
+                          TimePoint(std::chrono::seconds(msg->time()))});
       }
     }
   }
@@ -253,103 +250,150 @@ public:
 
 class ChatApp {
 private:
-  WINDOW* history_win = nullptr;
-  WINDOW* input_win = nullptr;
+  WINDOW* history_win_ = nullptr;
+  WINDOW* input_win_ = nullptr;
   std::unique_ptr<User> user_ = nullptr;
-  std::mutex ui_mutex;
-  std::string time_to_string(const std::chrono::system_clock::time_point& tp) {
+  std::mutex ui_mutex_;
+  bool is_active_ = true;
+  std::string time_to_string(TimePoint tp) {
     return std::format("{:%F %H-%M}", tp);
   }
 
   void print_message_to_history(const Message& msg) {
-    std::lock_guard<decltype(ui_mutex)> lock(ui_mutex);
+    std::lock_guard<decltype(ui_mutex_)> lock(ui_mutex_);
     std::string formatted = "@" + msg.sender + " [" +
                             time_to_string(msg.timestamp) + "] " + msg.content;
-    wprintw(history_win, "%s\n", formatted.c_str());
-    wrefresh(history_win);
+    wprintw(history_win_, "%s\n", formatted.c_str());
+    wrefresh(history_win_);
   }
 
   std::string get_input_line(WINDOW* win) {
-    char buffer[1024];
+    std::array<char, kBufferSize> buffer{'\0'};
     echo();
-    wgetnstr(win, buffer, sizeof(buffer) - 1);
+    wgetnstr(win, buffer.data(), buffer.size() - 1);
     noecho();
-    return std::string(buffer);
+    return std::string(buffer.data());
   }
 
   void clear_input_window() {
-    werase(input_win);
-    box(input_win, 0, 0);
-    wrefresh(input_win);
+    werase(input_win_);
+    box(input_win_, 0, 0);
+    wrefresh(input_win_);
   }
 
   void run_input_loop() {
-    wprintw(input_win, "Enter your login: ");
-    std::string login = get_input_line(input_win);
+    wprintw(input_win_, "Enter your login: ");
+    std::string login = get_input_line(input_win_);
     clear_input_window();
+    if (!is_active_) {
+      return;
+    }
     user_ = std::make_unique<User>(login, [this](const Message& msg) {
       this->print_message_to_history(msg);
     });
     // Start receiver thread
     std::thread receiver_thread([this]() { this->user_->RunReceiverLoop(); });
     receiver_thread.detach();
-    while (true) {
+    while (is_active_) {
+			ui_mutex_.lock();
       mvwprintw(
-          input_win, 1, 2,
+          input_win_, 1, 2,
           "Select the message you want to send (1: instant, 2: delayed): ");
-      wrefresh(input_win);
+      wrefresh(input_win_);
+			ui_mutex_.unlock();
 
-      std::string choice = get_input_line(input_win);
+      std::string choice = get_input_line(input_win_);
+			ui_mutex_.lock();
       clear_input_window();
+			ui_mutex_.unlock();
       // Instant message
       if (choice == "1") {
-        mvwprintw(input_win, 1, 2, "Input the receiver login: ");
-        wrefresh(input_win);
-        std::string receiver = get_input_line(input_win);
+        if (!is_active_) {
+          return;
+        }
+        ui_mutex_.lock();
+        mvwprintw(input_win_, 1, 2, "Input the receiver login: ");
+        wrefresh(input_win_);
+        ui_mutex_.unlock();
+        std::string receiver = get_input_line(input_win_);
+        if (!is_active_) {
+          return;
+        }
 
+        ui_mutex_.lock();
         clear_input_window();
-        mvwprintw(input_win, 1, 2, "Input the message: ");
-        wrefresh(input_win);
-        std::string message = get_input_line(input_win);
+        mvwprintw(input_win_, 1, 2, "Input the message: ");
+        wrefresh(input_win_);
+        ui_mutex_.unlock();
+        std::string message = get_input_line(input_win_);
+        if (!is_active_) {
+          return;
+        }
 
         user_->SendToUser(receiver, message);
+        ui_mutex_.lock();
         clear_input_window();
+        ui_mutex_.unlock();
         // Delayed message
       } else if (choice == "2") {
-        mvwprintw(input_win, 1, 2, "Input the receiver login: ");
-        wrefresh(input_win);
-        std::string receiver = get_input_line(input_win);
+        ui_mutex_.lock();
+        mvwprintw(input_win_, 1, 2, "Input the receiver login: ");
+        wrefresh(input_win_);
+        ui_mutex_.unlock();
+        std::string receiver = get_input_line(input_win_);
+        if (!is_active_) {
+          return;
+        }
 
+        ui_mutex_.lock();
         clear_input_window();
-        mvwprintw(input_win, 1, 2, "Input the message: ");
-        wrefresh(input_win);
-        std::string message = get_input_line(input_win);
+        mvwprintw(input_win_, 1, 2, "Input the message: ");
+        wrefresh(input_win_);
+        ui_mutex_.unlock();
+        std::string message = get_input_line(input_win_);
+        if (!is_active_) {
+          return;
+        }
 
+        ui_mutex_.lock();
         clear_input_window();
-        mvwprintw(input_win, 1, 2, "Input date (YYYY-MM-DD hh-mm): ");
-        wrefresh(input_win);
-        std::string time_str = get_input_line(input_win);
+        mvwprintw(input_win_, 1, 2, "Input date (YYYY-MM-DD hh-mm): ");
+        wrefresh(input_win_);
+        ui_mutex_.unlock();
+
+        std::string time_str = get_input_line(input_win_);
+        if (!is_active_) {
+          return;
+        }
 
         std::chrono::local_seconds time_to_send;
         std::istringstream istream{time_str};
         istream >> std::chrono::parse("%F %R", time_to_send);
         // TODO: failed to parse
         if (istream.fail()) {
-          mvwprintw(input_win, 1, 2,
+          std::lock_guard<std::mutex> lk(ui_mutex_);
+          mvwprintw(input_win_, 1, 2,
                     "Invalid time format. Press the key to continue...");
-          wrefresh(input_win);
+          wrefresh(input_win_);
           getch();
           clear_input_window();
         }
         user_->SendDelayedToUser(receiver, message,
                                  kCurrentZone->to_sys(time_to_send));
+        ui_mutex_.lock();
         clear_input_window();
+        ui_mutex_.unlock();
       } else {
-        mvwprintw(input_win, 1, 2,
+        if (!is_active_) {
+          return;
+        }
+        ui_mutex_.lock();
+        mvwprintw(input_win_, 1, 2,
                   "Invalid choice. Press any key to continue...");
-        wrefresh(input_win);
+        wrefresh(input_win_);
         getch();
         clear_input_window();
+        ui_mutex_.unlock();
       }
     }
   }
@@ -365,22 +409,35 @@ public:
     getmaxyx(stdscr, height, width);
 
     // Create windows
-    history_win = newwin(height - 5, width, 0, 0);
-    input_win = newwin(5, width, height - 5, 0);
+    history_win_ = newwin(height - 5, width, 0, 0);
+    input_win_ = newwin(5, width, height - 5, 0);
 
-    scrollok(history_win, TRUE);
-    box(input_win, 0, 0);
-    wrefresh(history_win);
+    scrollok(history_win_, TRUE);
+    box(input_win_, 0, 0);
+    wrefresh(history_win_);
 
     // Run input loop in main thread
     run_input_loop();
 
     endwin();
   }
+  void Shutdown() { is_active_ = false; }
 };
-
+std::unique_ptr<ChatApp> kChatApp;
+void GracefulShutdown(int signum) {
+  kChatApp->Shutdown();
+  std::cerr << "Shutdown started\n";
+}
 int main() {
-  ChatApp app;
-  app.run();
+  struct sigaction sigact;
+  sigact.sa_handler = &GracefulShutdown;
+  sigact.sa_flags &= ~SA_RESTART;
+  int status = sigaction(SIGINT, &sigact, NULL);
+  if (status == -1) {
+    std::cerr << "Error when establishing signal handler\n";
+    return -1;
+  }
+  kChatApp = std::make_unique<ChatApp>();
+  kChatApp->run();
   return 0;
 }
