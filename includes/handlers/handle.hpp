@@ -4,28 +4,12 @@
 #include <iostream>
 #include <string.h>
 
+#include <config.hpp>
 #include <transport/PipeTransport.hpp>
 
 namespace handlers {
 
-struct Metadata {
-  int64_t msg_type;
-  int64_t length;
-};
-struct ResponseMetadata {
-  int64_t length;
-};
 enum class BindMdAndSendErr { Success, TransportErr, SerializationErr };
-template <typename ProtoMessage, typename MetadataT>
-BindMdAndSendErr
-BindMetadataAndSend(const ProtoMessage& msg, const MetadataT& metadata,
-                    const transport::PipeTransport& user_transport) {
-	auto stream = user_transport.StartStream();
-	if(!stream){
-		return BindMdAndSendErr::TransportErr;
-	}
-  return BindMetadataAndSend(msg, metadata, *stream);
-}
 template <typename ProtoMessage, typename MetadataT>
 BindMdAndSendErr BindMetadataAndSend(const ProtoMessage& msg,
                                      const MetadataT& metadata,
@@ -44,6 +28,16 @@ BindMdAndSendErr BindMetadataAndSend(const ProtoMessage& msg,
     return BindMdAndSendErr::TransportErr;
   }
   return BindMdAndSendErr{BindMdAndSendErr::Success};
+}
+template <typename ProtoMessage, typename MetadataT>
+BindMdAndSendErr
+BindMetadataAndSend(const ProtoMessage& msg, const MetadataT& metadata,
+                    const transport::PipeTransport& user_transport) {
+  auto stream = user_transport.StartStream();
+  if (!stream) {
+    return BindMdAndSendErr::TransportErr;
+  }
+  return BindMetadataAndSend(msg, metadata, *stream);
 }
 
 template <typename ProtoResponse, typename ProtoRequest>

@@ -6,7 +6,7 @@
 #include <handlers/handle.hpp>
 #include <main_handler_loop.hpp>
 #include <protos/main.pb.h>
-#include <thread.hpp>
+#include <os/thread.hpp>
 
 const std::string_view kUserPipe = "/tmp/";
 const std::chrono::seconds kTestTimeout(2);
@@ -14,7 +14,7 @@ const std::chrono::seconds kTestTimeout(2);
 template <int msg_type, typename ProtoRequest>
 void SendToServer(const ProtoRequest& msg,
                   const transport::PipeTransport& server) {
-  handlers::Metadata md{msg_type, static_cast<int64_t>(msg.ByteSizeLong())};
+  Metadata md{msg_type, static_cast<int64_t>(msg.ByteSizeLong())};
   auto err = handlers::BindMetadataAndSend(msg, md, server);
   EXPECT_EQ(err, handlers::BindMdAndSendErr::Success);
 }
@@ -23,12 +23,12 @@ ProtoResponse GetFromPipe(const transport::PipeTransport& pipe) {
   ProtoResponse response;
   auto stream = pipe.StartStream();
   EXPECT_TRUE(stream);
-  std::string buf(sizeof(handlers::ResponseMetadata), '\0');
+  std::string buf(sizeof(ResponseMetadata), '\0');
   auto read_bytes = stream->Receive(buf);
   EXPECT_TRUE(read_bytes);
   EXPECT_EQ(*read_bytes, buf.length());
   auto metadata =
-      reinterpret_cast<const handlers::ResponseMetadata*>(buf.c_str());
+      reinterpret_cast<const ResponseMetadata*>(buf.c_str());
   std::string msg_buf(metadata->length, '\0');
   auto read_bytes1 = stream->Receive(msg_buf);
   EXPECT_TRUE(read_bytes1);

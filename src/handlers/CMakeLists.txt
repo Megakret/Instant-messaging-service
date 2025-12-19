@@ -6,7 +6,7 @@ endforeach()
 
 add_library(messenger_service_lib messenger_service.cpp)
 target_include_directories(messenger_service_lib PUBLIC ${INCLUDES})
-target_link_libraries(messenger_service_lib PUBLIC user_lib proto-objects)
+target_link_libraries(messenger_service_lib PUBLIC user_lib proto-objects mutex_lib)
 
 add_library(postpone_handler_lib postpone_handler.cpp)
 target_include_directories(postpone_handler_lib PUBLIC ${INCLUDES})

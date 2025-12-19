@@ -3,8 +3,8 @@
 #include <chrono>
 #include <list>
 #include <map>
-#include <mutex>
 
+#include <os/mutex.hpp>
 #include <protos/main.pb.h>
 #include <user_storage.hpp>
 
@@ -14,7 +14,7 @@ private:
   using TimePoint = std::chrono::time_point<std::chrono::system_clock>;
 
 public:
-  PostponeService(UserStorage& users, std::mutex& users_mu_);
+  PostponeService(UserStorage& users, os::Mutex& users_mu_);
   PostponeErr DelaySend(std::string sender, std::string receiver,
                         std::string msg);
   PostponeErr DelaySend(std::string sender, std::string receiver,
@@ -28,7 +28,7 @@ private:
     TimePoint time_to_send;
   };
   UserStorage& users_;
-  std::mutex& users_mu_;
-  std::mutex queue_mu_;
+  os::Mutex& users_mu_;
+  os::Mutex queue_mu_;
   std::map<std::string, std::list<DelayedMessage>> delayed_msgs_;
 };

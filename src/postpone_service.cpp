@@ -2,7 +2,7 @@
 
 #include <unistd.h>
 
-PostponeService::PostponeService(UserStorage& users, std::mutex& users_mu)
+PostponeService::PostponeService(UserStorage& users, os::Mutex& users_mu)
     : users_(users), users_mu_(users_mu) {}
 PostponeErr PostponeService::DelaySend(std::string sender, std::string receiver,
                                        std::string msg) {
@@ -13,12 +13,12 @@ PostponeErr PostponeService::DelaySend(std::string sender, std::string receiver,
                                        std::string msg,
                                        TimePoint time_to_send) {
   {
-    std::lock_guard<std::mutex> lk(users_mu_);
+    std::lock_guard<os::Mutex> lk(users_mu_);
     if (users_.find(receiver) == users_.end()) {
       return PostponeErr::UserDoesntExist;
     }
   }
-  std::lock_guard<std::mutex> lk(queue_mu_);
+  std::lock_guard<os::Mutex> lk(queue_mu_);
   auto it = delayed_msgs_.find(receiver);
   if (it == delayed_msgs_.end()) {
     auto [new_it, exists] =
@@ -33,7 +33,7 @@ void PostponeService::StartSendSchedule(std::chrono::seconds timeout) {
   int t_in_seconds = timeout.count();
   while (true) {
     sleep(t_in_seconds);
-    std::lock_guard<std::mutex> lk(queue_mu_);
+    std::lock_guard<os::Mutex> lk(queue_mu_);
     for (auto& [login, msg_list] : delayed_msgs_) {
       std::cout << "Send schedule\n";
       users_mu_.lock();

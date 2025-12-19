@@ -1,12 +1,11 @@
 add_subdirectory(transport)
 add_subdirectory(handlers)
-
-add_library(thread_lib threads_unix.cpp)
-target_include_directories(thread_lib PUBLIC ${INCLUDES})
+add_subdirectory(client)
+add_subdirectory(os)
 
 add_library(postpone_service_lib postpone_service.cpp)
 target_include_directories(postpone_service_lib PUBLIC ${INCLUDES})
-target_link_libraries(postpone_service_lib PUBLIC proto-objects)
+target_link_libraries(postpone_service_lib PUBLIC proto-objects mutex_lib)
 
 add_library(main_handler_lib main_handler.cpp)
 target_include_directories(main_handler_lib PUBLIC ${INCLUDES})
@@ -17,3 +16,6 @@ target_link_libraries(main_handler_test PUBLIC main_handler_lib GTest::gtest_mai
 foreach(executable main_handler_test)
 	target_include_directories(${executable} PUBLIC ${INCLUDES})
 endforeach()
+
+add_executable(server server.cpp)
+target_link_libraries(server main_handler_lib)

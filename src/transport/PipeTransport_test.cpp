@@ -4,7 +4,7 @@
 #include <string.h>
 
 #include <config.hpp>
-#include <thread.hpp>
+#include <os/thread.hpp>
 #include <transport/PipeTransport.hpp>
 
 namespace transport {
