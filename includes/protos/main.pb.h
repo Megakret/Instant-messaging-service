@@ -120,6 +120,7 @@ namespace messenger {
 enum ConnectResponce_StatusType : int {
   ConnectResponce_StatusType_OK = 0,
   ConnectResponce_StatusType_ERROR = 1,
+  ConnectResponce_StatusType_INVALID_ARGUMENT = 2,
   ConnectResponce_StatusType_ConnectResponce_StatusType_INT_MIN_SENTINEL_DO_NOT_USE_ =
       ::std::numeric_limits<::int32_t>::min(),
   ConnectResponce_StatusType_ConnectResponce_StatusType_INT_MAX_SENTINEL_DO_NOT_USE_ =
@@ -130,11 +131,11 @@ extern const uint32_t ConnectResponce_StatusType_internal_data_[];
 inline constexpr ConnectResponce_StatusType ConnectResponce_StatusType_StatusType_MIN =
     static_cast<ConnectResponce_StatusType>(0);
 inline constexpr ConnectResponce_StatusType ConnectResponce_StatusType_StatusType_MAX =
-    static_cast<ConnectResponce_StatusType>(1);
+    static_cast<ConnectResponce_StatusType>(2);
 inline bool ConnectResponce_StatusType_IsValid(int value) {
-  return 0 <= value && value <= 1;
+  return 0 <= value && value <= 2;
 }
-inline constexpr int ConnectResponce_StatusType_StatusType_ARRAYSIZE = 1 + 1;
+inline constexpr int ConnectResponce_StatusType_StatusType_ARRAYSIZE = 2 + 1;
 const ::google::protobuf::EnumDescriptor* PROTOBUF_NONNULL ConnectResponce_StatusType_descriptor();
 template <typename T>
 const ::std::string& ConnectResponce_StatusType_Name(T value) {
@@ -145,7 +146,7 @@ const ::std::string& ConnectResponce_StatusType_Name(T value) {
 }
 template <>
 inline const ::std::string& ConnectResponce_StatusType_Name(ConnectResponce_StatusType value) {
-  return ::google::protobuf::internal::NameOfDenseEnum<ConnectResponce_StatusType_descriptor, 0, 1>(
+  return ::google::protobuf::internal::NameOfDenseEnum<ConnectResponce_StatusType_descriptor, 0, 2>(
       static_cast<int>(value));
 }
 inline bool ConnectResponce_StatusType_Parse(
@@ -156,6 +157,7 @@ inline bool ConnectResponce_StatusType_Parse(
 enum DisconnectResponce_StatusType : int {
   DisconnectResponce_StatusType_OK = 0,
   DisconnectResponce_StatusType_ERROR = 1,
+  DisconnectResponce_StatusType_INVALID_ARGUMENT = 2,
   DisconnectResponce_StatusType_DisconnectResponce_StatusType_INT_MIN_SENTINEL_DO_NOT_USE_ =
       ::std::numeric_limits<::int32_t>::min(),
   DisconnectResponce_StatusType_DisconnectResponce_StatusType_INT_MAX_SENTINEL_DO_NOT_USE_ =
@@ -166,11 +168,11 @@ extern const uint32_t DisconnectResponce_StatusType_internal_data_[];
 inline constexpr DisconnectResponce_StatusType DisconnectResponce_StatusType_StatusType_MIN =
     static_cast<DisconnectResponce_StatusType>(0);
 inline constexpr DisconnectResponce_StatusType DisconnectResponce_StatusType_StatusType_MAX =
-    static_cast<DisconnectResponce_StatusType>(1);
+    static_cast<DisconnectResponce_StatusType>(2);
 inline bool DisconnectResponce_StatusType_IsValid(int value) {
-  return 0 <= value && value <= 1;
+  return 0 <= value && value <= 2;
 }
-inline constexpr int DisconnectResponce_StatusType_StatusType_ARRAYSIZE = 1 + 1;
+inline constexpr int DisconnectResponce_StatusType_StatusType_ARRAYSIZE = 2 + 1;
 const ::google::protobuf::EnumDescriptor* PROTOBUF_NONNULL DisconnectResponce_StatusType_descriptor();
 template <typename T>
 const ::std::string& DisconnectResponce_StatusType_Name(T value) {
@@ -181,7 +183,7 @@ const ::std::string& DisconnectResponce_StatusType_Name(T value) {
 }
 template <>
 inline const ::std::string& DisconnectResponce_StatusType_Name(DisconnectResponce_StatusType value) {
-  return ::google::protobuf::internal::NameOfDenseEnum<DisconnectResponce_StatusType_descriptor, 0, 1>(
+  return ::google::protobuf::internal::NameOfDenseEnum<DisconnectResponce_StatusType_descriptor, 0, 2>(
       static_cast<int>(value));
 }
 inline bool DisconnectResponce_StatusType_Parse(
@@ -192,6 +194,7 @@ inline bool DisconnectResponce_StatusType_Parse(
 enum SendResponce_StatusType : int {
   SendResponce_StatusType_OK = 0,
   SendResponce_StatusType_ERROR = 1,
+  SendResponce_StatusType_INVALID_ARGUMENT = 2,
   SendResponce_StatusType_SendResponce_StatusType_INT_MIN_SENTINEL_DO_NOT_USE_ =
       ::std::numeric_limits<::int32_t>::min(),
   SendResponce_StatusType_SendResponce_StatusType_INT_MAX_SENTINEL_DO_NOT_USE_ =
@@ -202,11 +205,11 @@ extern const uint32_t SendResponce_StatusType_internal_data_[];
 inline constexpr SendResponce_StatusType SendResponce_StatusType_StatusType_MIN =
     static_cast<SendResponce_StatusType>(0);
 inline constexpr SendResponce_StatusType SendResponce_StatusType_StatusType_MAX =
-    static_cast<SendResponce_StatusType>(1);
+    static_cast<SendResponce_StatusType>(2);
 inline bool SendResponce_StatusType_IsValid(int value) {
-  return 0 <= value && value <= 1;
+  return 0 <= value && value <= 2;
 }
-inline constexpr int SendResponce_StatusType_StatusType_ARRAYSIZE = 1 + 1;
+inline constexpr int SendResponce_StatusType_StatusType_ARRAYSIZE = 2 + 1;
 const ::google::protobuf::EnumDescriptor* PROTOBUF_NONNULL SendResponce_StatusType_descriptor();
 template <typename T>
 const ::std::string& SendResponce_StatusType_Name(T value) {
@@ -217,7 +220,7 @@ const ::std::string& SendResponce_StatusType_Name(T value) {
 }
 template <>
 inline const ::std::string& SendResponce_StatusType_Name(SendResponce_StatusType value) {
-  return ::google::protobuf::internal::NameOfDenseEnum<SendResponce_StatusType_descriptor, 0, 1>(
+  return ::google::protobuf::internal::NameOfDenseEnum<SendResponce_StatusType_descriptor, 0, 2>(
       static_cast<int>(value));
 }
 inline bool SendResponce_StatusType_Parse(
@@ -228,6 +231,7 @@ inline bool SendResponce_StatusType_Parse(
 enum SendPostponedResponce_StatusType : int {
   SendPostponedResponce_StatusType_OK = 0,
   SendPostponedResponce_StatusType_ERROR = 1,
+  SendPostponedResponce_StatusType_INVALID_ARGUMENT = 2,
   SendPostponedResponce_StatusType_SendPostponedResponce_StatusType_INT_MIN_SENTINEL_DO_NOT_USE_ =
       ::std::numeric_limits<::int32_t>::min(),
   SendPostponedResponce_StatusType_SendPostponedResponce_StatusType_INT_MAX_SENTINEL_DO_NOT_USE_ =
@@ -238,11 +242,11 @@ extern const uint32_t SendPostponedResponce_StatusType_internal_data_[];
 inline constexpr SendPostponedResponce_StatusType SendPostponedResponce_StatusType_StatusType_MIN =
     static_cast<SendPostponedResponce_StatusType>(0);
 inline constexpr SendPostponedResponce_StatusType SendPostponedResponce_StatusType_StatusType_MAX =
-    static_cast<SendPostponedResponce_StatusType>(1);
+    static_cast<SendPostponedResponce_StatusType>(2);
 inline bool SendPostponedResponce_StatusType_IsValid(int value) {
-  return 0 <= value && value <= 1;
+  return 0 <= value && value <= 2;
 }
-inline constexpr int SendPostponedResponce_StatusType_StatusType_ARRAYSIZE = 1 + 1;
+inline constexpr int SendPostponedResponce_StatusType_StatusType_ARRAYSIZE = 2 + 1;
 const ::google::protobuf::EnumDescriptor* PROTOBUF_NONNULL SendPostponedResponce_StatusType_descriptor();
 template <typename T>
 const ::std::string& SendPostponedResponce_StatusType_Name(T value) {
@@ -253,7 +257,7 @@ const ::std::string& SendPostponedResponce_StatusType_Name(T value) {
 }
 template <>
 inline const ::std::string& SendPostponedResponce_StatusType_Name(SendPostponedResponce_StatusType value) {
-  return ::google::protobuf::internal::NameOfDenseEnum<SendPostponedResponce_StatusType_descriptor, 0, 1>(
+  return ::google::protobuf::internal::NameOfDenseEnum<SendPostponedResponce_StatusType_descriptor, 0, 2>(
       static_cast<int>(value));
 }
 inline bool SendPostponedResponce_StatusType_Parse(
@@ -409,6 +413,7 @@ class SendResponce final : public ::google::protobuf::Message
   using StatusType = SendResponce_StatusType;
   static constexpr StatusType OK = SendResponce_StatusType_OK;
   static constexpr StatusType ERROR = SendResponce_StatusType_ERROR;
+  static constexpr StatusType INVALID_ARGUMENT = SendResponce_StatusType_INVALID_ARGUMENT;
   static inline bool StatusType_IsValid(int value) {
     return SendResponce_StatusType_IsValid(value);
   }
@@ -638,6 +643,7 @@ class SendPostponedResponce final : public ::google::protobuf::Message
   using StatusType = SendPostponedResponce_StatusType;
   static constexpr StatusType OK = SendPostponedResponce_StatusType_OK;
   static constexpr StatusType ERROR = SendPostponedResponce_StatusType_ERROR;
+  static constexpr StatusType INVALID_ARGUMENT = SendPostponedResponce_StatusType_INVALID_ARGUMENT;
   static inline bool StatusType_IsValid(int value) {
     return SendPostponedResponce_StatusType_IsValid(value);
   }
@@ -1344,6 +1350,7 @@ class DisconnectResponce final : public ::google::protobuf::Message
   using StatusType = DisconnectResponce_StatusType;
   static constexpr StatusType OK = DisconnectResponce_StatusType_OK;
   static constexpr StatusType ERROR = DisconnectResponce_StatusType_ERROR;
+  static constexpr StatusType INVALID_ARGUMENT = DisconnectResponce_StatusType_INVALID_ARGUMENT;
   static inline bool StatusType_IsValid(int value) {
     return DisconnectResponce_StatusType_IsValid(value);
   }
@@ -1787,6 +1794,7 @@ class ConnectResponce final : public ::google::protobuf::Message
   using StatusType = ConnectResponce_StatusType;
   static constexpr StatusType OK = ConnectResponce_StatusType_OK;
   static constexpr StatusType ERROR = ConnectResponce_StatusType_ERROR;
+  static constexpr StatusType INVALID_ARGUMENT = ConnectResponce_StatusType_INVALID_ARGUMENT;
   static inline bool StatusType_IsValid(int value) {
     return ConnectResponce_StatusType_IsValid(value);
   }

@@ -17,9 +17,11 @@
 
 const std::string_view kClientPipeDir = "/tmp/clients/";
 const std::string_view kLogFilename = "client.log";
-const std::size_t kBufferSize = 1024;
+const std::size_t kInputBufferSz = 1024;
 using TimePoint = std::chrono::time_point<std::chrono::system_clock>;
-const auto kCurrentZone = std::chrono::current_zone();
+const auto kTimezone = std::chrono::current_zone();
+constexpr std::string_view kErrorFromServerFormat(
+    "Error from server: {}. Press the key to continue...");
 enum class SendToServerStatus {
   Success,
   TransportErr,
@@ -48,20 +50,17 @@ enum class GetFromPipeErr {
   Eof,
   ParseError,
 };
-void PrintErr(GetFromPipeErr err) {
+std::string_view GetErr(GetFromPipeErr err) {
   if (err == GetFromPipeErr::SystemError) {
-    std::cerr << "Error when reading from pipe: SystemError\n";
-    return;
+    return "Error when reading from pipe: SystemError\n";
   }
   if (err == GetFromPipeErr::Eof) {
-    std::cerr << "Error when reading from pipe: EOF\n";
-    return;
+    return "Error when reading from pipe: EOF\n";
   }
   if (err == GetFromPipeErr::ParseError) {
-    std::cerr << "Error when reading from pipe: ParseError\n";
-    return;
+    return "Error when reading from pipe: ParseError\n";
   }
-  std::cerr << "Error when reading from pipe: Unknown\n";
+  return "Error when reading from pipe: Unknown\n";
 }
 template <typename ProtoResponse>
 std::expected<ProtoResponse, GetFromPipeErr>
@@ -111,7 +110,8 @@ private:
   std::function<void(Message)> callback_;
 
 public:
-  User(std::string login, std::function<void(Message)> callback)
+  User(std::string login, std::function<void(Message)> callback,
+       std::string& error_msg)
       : login_(login), resp_pipe_(std::string(kClientPipeDir) + login,
                                   transport::Read | transport::Create),
         callback_(callback),
@@ -130,11 +130,12 @@ public:
     {
       auto msg(GetFromPipe<messenger::ConnectResponce>(resp_pipe_));
       if (!msg) {
-        PrintErr(msg.error());
+        error_msg = GetErr(msg.error());
         return;
       }
-      if (msg->status() == messenger::ConnectResponce::ERROR) {
-        std::cerr << "Error from server on connecting\n";
+      if (msg->status() != messenger::ConnectResponce::OK) {
+        error_msg =
+            std::format("Error from server on connecting: {}", msg->verbose());
         return;
       }
       transport::PipeErr err;
@@ -146,6 +147,7 @@ public:
         return;
       }
     }
+    error_msg = "";
   }
   ~User() {
     {
@@ -162,16 +164,17 @@ public:
     {
       auto msg(GetFromPipe<messenger::DisconnectResponce>(resp_pipe_));
       if (!msg) {
-        PrintErr(msg.error());
+        GetErr(msg.error());
         return;
       }
       if (msg->status() == messenger::DisconnectResponce::ERROR) {
-        std::cerr << "Error from server  on disconnecting\n";
+        std::cerr << "Error from server on disconnecting: " << msg->verbose();
       }
     }
   }
 
-  void SendToUser(const std::string& receiver, const std::string& message) {
+  std::string SendToUser(const std::string& receiver,
+                         const std::string& message) {
     // In real implementation, send over network
     messenger::SendMessage req;
     req.set_sender_login(login_);
@@ -180,22 +183,21 @@ public:
     req.set_pipe_path(resp_pipe_.GetPath());
     auto status = SendMessage(req, kSendMsgID, server_pipe_);
     if (status != SendToServerStatus::Success) {
-      return;
     }
     {
       auto msg(GetFromPipe<messenger::SendResponce>(resp_pipe_));
       if (!msg) {
-        PrintErr(msg.error());
-        return;
+        return std::string(GetErr(msg.error()));
       }
-      if (msg->status() == messenger::SendResponce::ERROR) {
+      if (msg->status() != messenger::SendResponce::OK) {
         std::cerr << "Error from server on sending message\n";
       }
     }
+    return "";
   }
 
-  void SendDelayedToUser(const std::string& receiver,
-                         const std::string& message, TimePoint time) {
+  std::string SendDelayedToUser(const std::string& receiver,
+                                const std::string& message, TimePoint time) {
     std::lock_guard<os::Mutex> lock(user_mu_);
     messenger::SendPostponedRequest req;
     req.set_pipe_path(resp_pipe_.GetPath());
@@ -209,7 +211,7 @@ public:
     req.set_receiver(receiver);
     auto status = SendMessage(req, kPostponeMsgID, server_pipe_);
     if (status != SendToServerStatus::Success) {
-      return;
+      return "";
     }
     {
       auto msg(GetFromPipe<messenger::SendPostponedResponce>(resp_pipe_));
@@ -217,6 +219,7 @@ public:
         std::cerr << "Error on sending postponed message\n";
       }
     }
+    return "";
   }
 
   void RunReceiverLoop() {
@@ -235,7 +238,7 @@ public:
           auto err = msg.error();
           if (err == GetFromPipeErr::SystemError) {
             std::cerr << "Error on receiving message from pipe: ";
-            PrintErr(err);
+            GetErr(err);
             continue;
           }
           if (err == GetFromPipeErr::Eof) {
@@ -257,20 +260,21 @@ private:
   std::unique_ptr<User> user_ = nullptr;
   os::Mutex ui_mutex_;
   bool is_active_ = true;
-  std::string time_to_string(TimePoint tp) {
-    return std::format("{:%F %H-%M}", tp);
+  std::string TimeToString(TimePoint tp) {
+    auto local_time = std::chrono::zoned_time{kTimezone, tp};
+    return std::format("{:%F %H-%M}", local_time);
   }
 
-  void print_message_to_history(const Message& msg) {
+  void PrintMessageToHistory(const Message& msg) {
     std::lock_guard<os::Mutex> lock(ui_mutex_);
     std::string formatted = "@" + msg.sender + " [" +
-                            time_to_string(msg.timestamp) + "] " + msg.content;
+                            TimeToString(msg.timestamp) + "] " + msg.content;
     wprintw(history_win_, "%s\n", formatted.c_str());
     wrefresh(history_win_);
   }
 
   std::string get_input_line(WINDOW* win) {
-    std::array<char, kBufferSize> buffer{'\0'};
+    std::array<char, kInputBufferSz> buffer{'\0'};
     echo();
     wgetnstr(win, buffer.data(), buffer.size() - 1);
     noecho();
@@ -284,15 +288,40 @@ private:
   }
 
   void run_input_loop() {
-    wprintw(input_win_, "Enter your login: ");
-    std::string login = get_input_line(input_win_);
-    clear_input_window();
-    if (!is_active_) {
-      return;
+    bool is_input_login = true;
+    while (is_input_login) {
+      clear_input_window();
+      mvwprintw(input_win_, 1, 2, "Enter your login: ");
+      std::string login = get_input_line(input_win_);
+      if (!is_active_) {
+        return;
+      }
+      if (login.contains('/')) {
+        login = "";
+        mvwprintw(
+            input_win_, 1, 2,
+            "You cant place / in your login. Press any key to continue...");
+        wrefresh(input_win_);
+        getch();
+        clear_input_window();
+        continue;
+      }
+      std::string login_err;
+      user_ = std::make_unique<User>(
+          login,
+          [this](const Message& msg) { this->PrintMessageToHistory(msg); },
+          login_err);
+      if (login_err != "") {
+        clear_input_window();
+        mvwprintw(input_win_, 1, 2,
+                  std::format(kErrorFromServerFormat, login_err).c_str());
+        wrefresh(input_win_);
+        getch();
+        continue;
+      }
+      is_input_login = false;
     }
-    user_ = std::make_unique<User>(login, [this](const Message& msg) {
-      this->print_message_to_history(msg);
-    });
+    clear_input_window();
     // Start receiver thread
     os::Thread receiver_thread;
     auto recv_lambda =
@@ -301,12 +330,12 @@ private:
     receiver_thread.Detach();
     while (is_active_) {
       ui_mutex_.lock();
+      clear_input_window();
       mvwprintw(
           input_win_, 1, 2,
           "Select the message you want to send (1: instant, 2: delayed): ");
       wrefresh(input_win_);
       ui_mutex_.unlock();
-
       std::string choice = get_input_line(input_win_);
       ui_mutex_.lock();
       clear_input_window();
@@ -335,9 +364,15 @@ private:
           return;
         }
 
-        user_->SendToUser(receiver, message);
+        std::string err = user_->SendToUser(receiver, message);
         ui_mutex_.lock();
-        clear_input_window();
+        if (err != "") {
+          clear_input_window();
+          mvwprintw(input_win_, 1, 2,
+                    std::format(kErrorFromServerFormat, err).c_str());
+          wrefresh(input_win_);
+          getch();
+        }
         ui_mutex_.unlock();
         // Delayed message
       } else if (choice == "2") {
@@ -349,7 +384,6 @@ private:
         if (!is_active_) {
           return;
         }
-
         ui_mutex_.lock();
         clear_input_window();
         mvwprintw(input_win_, 1, 2, "Input the message: ");
@@ -362,7 +396,7 @@ private:
 
         ui_mutex_.lock();
         clear_input_window();
-        mvwprintw(input_win_, 1, 2, "Input date (YYYY-MM-DD hh-mm): ");
+        mvwprintw(input_win_, 1, 2, "Input date (YYYY-MM-DD hh:mm): ");
         wrefresh(input_win_);
         ui_mutex_.unlock();
 
@@ -378,15 +412,21 @@ private:
         if (istream.fail()) {
           std::lock_guard<os::Mutex> lk(ui_mutex_);
           mvwprintw(input_win_, 1, 2,
-                    "Invalid time format. Press the key to continue...");
+                    "Invalid time format. Press any key to continue...");
           wrefresh(input_win_);
           getch();
           clear_input_window();
         }
-        user_->SendDelayedToUser(receiver, message,
-                                 kCurrentZone->to_sys(time_to_send));
+        std::string err = user_->SendDelayedToUser(
+            receiver, message, kTimezone->to_sys(time_to_send));
         ui_mutex_.lock();
-        clear_input_window();
+        if (err != "") {
+          clear_input_window();
+          mvwprintw(input_win_, 1, 2,
+                    std::format(kErrorFromServerFormat, err).c_str());
+          wrefresh(input_win_);
+          getch();
+        }
         ui_mutex_.unlock();
       } else {
         if (!is_active_) {
@@ -397,7 +437,6 @@ private:
                   "Invalid choice. Press any key to continue...");
         wrefresh(input_win_);
         getch();
-        clear_input_window();
         ui_mutex_.unlock();
       }
     }
@@ -420,17 +459,15 @@ public:
     scrollok(history_win_, TRUE);
     box(input_win_, 0, 0);
     wrefresh(history_win_);
-
-    // Run input loop in main thread
     run_input_loop();
 
     endwin();
   }
   void Shutdown() { is_active_ = false; }
 };
-std::unique_ptr<ChatApp> kChatApp;
+std::unique_ptr<ChatApp> chat_app;
 void GracefulShutdown(int signum) {
-  kChatApp->Shutdown();
+  chat_app->Shutdown();
   std::cerr << "Shutdown started\n";
 }
 int main() {
@@ -452,7 +489,7 @@ int main() {
     std::cerr << "Failed to dup2: " << strerror(errno) << '\n';
     return -1;
   }
-  kChatApp = std::make_unique<ChatApp>();
-  kChatApp->run();
+  chat_app = std::make_unique<ChatApp>();
+  chat_app->run();
   return 0;
 }
