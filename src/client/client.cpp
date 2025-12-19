@@ -267,7 +267,7 @@ private:
 
   void PrintMessageToHistory(const Message& msg) {
     std::lock_guard<os::Mutex> lock(ui_mutex_);
-    std::string formatted = "@" + msg.sender + " [" +
+    std::string formatted = "-" + msg.sender + " [" +
                             TimeToString(msg.timestamp) + "] " + msg.content;
     wprintw(history_win_, "%s\n", formatted.c_str());
     wrefresh(history_win_);

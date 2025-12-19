@@ -8,20 +8,19 @@
 
 const std::string_view kLogFilename = "server.log";
 const std::chrono::seconds kPostponeTimeout(30);
-int LogFd;
 void Shutdown(int signum) {
   std::cout << "Shutdown\n";
   std::cout.flush();
   exit(0);
 }
 int main() {
-  LogFd = open(kLogFilename.data(), O_WRONLY | O_CREAT, 0600);
-  if (LogFd == -1) {
+  int fd = open(kLogFilename.data(), O_WRONLY | O_CREAT, 0600);
+  if (fd == -1) {
     std::cerr << "Failed to open log file: " << strerror(errno) << '\n';
     return -1;
   }
-  int res = dup2(LogFd, STDOUT_FILENO);
-  close(LogFd);
+  int res = dup2(fd, STDOUT_FILENO);
+  close(fd);
   if (res == -1) {
     std::cerr << "Failed to dup2: " << strerror(errno) << '\n';
     return -1;
