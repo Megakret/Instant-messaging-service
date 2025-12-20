@@ -10,6 +10,9 @@
 namespace handlers {
 const std::string_view kSpecialChars = "_-";
 std::string ValidateLogin(std::string_view login) {
+  if (login == "") {
+    return "Login cant be empty";
+  }
   for (char c : login) {
     if (!((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') ||
           (c >= '0' && c <= '9') || kSpecialChars.contains(c))) {

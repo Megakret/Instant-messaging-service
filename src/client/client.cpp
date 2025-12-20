@@ -273,7 +273,7 @@ private:
     wrefresh(history_win_);
   }
 
-  std::string get_input_line(WINDOW* win) {
+  std::string GetInputLine(WINDOW* win) {
     std::array<char, kInputBufferSz> buffer{'\0'};
     echo();
     wgetnstr(win, buffer.data(), buffer.size() - 1);
@@ -281,18 +281,18 @@ private:
     return std::string(buffer.data());
   }
 
-  void clear_input_window() {
+  void ClearInputWindow() {
     werase(input_win_);
     box(input_win_, 0, 0);
     wrefresh(input_win_);
   }
 
-  void run_input_loop() {
+  void RunInputLoop() {
     bool is_input_login = true;
     while (is_input_login) {
-      clear_input_window();
+      ClearInputWindow();
       mvwprintw(input_win_, 1, 2, "Enter your login: ");
-      std::string login = get_input_line(input_win_);
+      std::string login = GetInputLine(input_win_);
       if (!is_active_) {
         return;
       }
@@ -300,19 +300,28 @@ private:
         login = "";
         mvwprintw(
             input_win_, 1, 2,
-            "You cant place / in your login. Press any key to continue...");
+            "you cant place / in your login. press any key to continue...");
         wrefresh(input_win_);
         getch();
-        clear_input_window();
+        ClearInputWindow();
         continue;
       }
+			if(login == ""){
+        mvwprintw(
+            input_win_, 1, 2,
+            "Login cant be empty. press any key to continue...");
+        wrefresh(input_win_);
+        getch();
+        ClearInputWindow();
+        continue;
+			}
       std::string login_err;
       user_ = std::make_unique<User>(
           login,
           [this](const Message& msg) { this->PrintMessageToHistory(msg); },
           login_err);
       if (login_err != "") {
-        clear_input_window();
+        ClearInputWindow();
         mvwprintw(input_win_, 1, 2,
                   std::format(kErrorFromServerFormat, login_err).c_str());
         wrefresh(input_win_);
@@ -321,7 +330,7 @@ private:
       }
       is_input_login = false;
     }
-    clear_input_window();
+    ClearInputWindow();
     // Start receiver thread
     os::Thread receiver_thread;
     auto recv_lambda =
@@ -330,15 +339,15 @@ private:
     receiver_thread.Detach();
     while (is_active_) {
       ui_mutex_.lock();
-      clear_input_window();
+      ClearInputWindow();
       mvwprintw(
           input_win_, 1, 2,
           "Select the message you want to send (1: instant, 2: delayed): ");
       wrefresh(input_win_);
       ui_mutex_.unlock();
-      std::string choice = get_input_line(input_win_);
+      std::string choice = GetInputLine(input_win_);
       ui_mutex_.lock();
-      clear_input_window();
+      ClearInputWindow();
       ui_mutex_.unlock();
       // Instant message
       if (choice == "1") {
@@ -349,17 +358,17 @@ private:
         mvwprintw(input_win_, 1, 2, "Input the receiver login: ");
         wrefresh(input_win_);
         ui_mutex_.unlock();
-        std::string receiver = get_input_line(input_win_);
+        std::string receiver = GetInputLine(input_win_);
         if (!is_active_) {
           return;
         }
 
         ui_mutex_.lock();
-        clear_input_window();
+        ClearInputWindow();
         mvwprintw(input_win_, 1, 2, "Input the message: ");
         wrefresh(input_win_);
         ui_mutex_.unlock();
-        std::string message = get_input_line(input_win_);
+        std::string message = GetInputLine(input_win_);
         if (!is_active_) {
           return;
         }
@@ -367,7 +376,7 @@ private:
         std::string err = user_->SendToUser(receiver, message);
         ui_mutex_.lock();
         if (err != "") {
-          clear_input_window();
+          ClearInputWindow();
           mvwprintw(input_win_, 1, 2,
                     std::format(kErrorFromServerFormat, err).c_str());
           wrefresh(input_win_);
@@ -380,27 +389,27 @@ private:
         mvwprintw(input_win_, 1, 2, "Input the receiver login: ");
         wrefresh(input_win_);
         ui_mutex_.unlock();
-        std::string receiver = get_input_line(input_win_);
+        std::string receiver = GetInputLine(input_win_);
         if (!is_active_) {
           return;
         }
         ui_mutex_.lock();
-        clear_input_window();
+        ClearInputWindow();
         mvwprintw(input_win_, 1, 2, "Input the message: ");
         wrefresh(input_win_);
         ui_mutex_.unlock();
-        std::string message = get_input_line(input_win_);
+        std::string message = GetInputLine(input_win_);
         if (!is_active_) {
           return;
         }
 
         ui_mutex_.lock();
-        clear_input_window();
+        ClearInputWindow();
         mvwprintw(input_win_, 1, 2, "Input date (YYYY-MM-DD hh:mm): ");
         wrefresh(input_win_);
         ui_mutex_.unlock();
 
-        std::string time_str = get_input_line(input_win_);
+        std::string time_str = GetInputLine(input_win_);
         if (!is_active_) {
           return;
         }
@@ -415,13 +424,13 @@ private:
                     "Invalid time format. Press any key to continue...");
           wrefresh(input_win_);
           getch();
-          clear_input_window();
+          ClearInputWindow();
         }
         std::string err = user_->SendDelayedToUser(
             receiver, message, kTimezone->to_sys(time_to_send));
         ui_mutex_.lock();
         if (err != "") {
-          clear_input_window();
+          ClearInputWindow();
           mvwprintw(input_win_, 1, 2,
                     std::format(kErrorFromServerFormat, err).c_str());
           wrefresh(input_win_);
@@ -443,7 +452,7 @@ private:
   }
 
 public:
-  void run() {
+  void Run() {
     initscr();
     cbreak();
     noecho();
@@ -459,7 +468,7 @@ public:
     scrollok(history_win_, TRUE);
     box(input_win_, 0, 0);
     wrefresh(history_win_);
-    run_input_loop();
+    RunInputLoop();
 
     endwin();
   }
@@ -490,6 +499,6 @@ int main() {
     return -1;
   }
   chat_app = std::make_unique<ChatApp>();
-  chat_app->run();
+  chat_app->Run();
   return 0;
 }
